@@ -1,10 +1,11 @@
 <?php
 /**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -15,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -33,13 +34,14 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 /**
  * Class AOPAssignManager.
  */
+#[\AllowDynamicProperties]
 class AOPAssignManager
 {
     private $ieX = false;
@@ -87,7 +89,14 @@ class AOPAssignManager
     {
         global $sugar_config;
         if ($this->aopFallback) {
-            return $sugar_config['aop']['distribution_options'];
+            $distributionOptions = null;
+            if (isset($sugar_config['aop']['distribution_options'])) {
+                $distributionOptions = $sugar_config['aop']['distribution_options'];
+            } else {
+                LoggerManager::getLogger()->warn('$sugar_config[aop][distribution_options] is not defined');
+            }
+
+            return $distributionOptions;
         } else {
             return $this->ieX->get_stored_options('distribution_options', '');
         }
@@ -101,7 +110,7 @@ class AOPAssignManager
     private function getRoleUsers($roleId)
     {
         require_once 'modules/ACLRoles/ACLRole.php';
-        $role = new ACLRole();
+        $role = BeanFactory::newBean('ACLRoles');
         $role->retrieve($roleId);
         $role_users = $role->get_linked_beans('users', 'User');
         $r_users = array();
@@ -129,7 +138,7 @@ class AOPAssignManager
             case 'security_group':
                 if (file_exists('modules/SecurityGroups/SecurityGroup.php')) {
                     require_once 'modules/SecurityGroups/SecurityGroup.php';
-                    $security_group = new SecurityGroup();
+                    $security_group = BeanFactory::newBean('SecurityGroups');
                     $security_group->retrieve($distributionOptions[1]);
                     $group_users = $security_group->get_linked_beans('users', 'User');
                     $users = array();
@@ -146,6 +155,7 @@ class AOPAssignManager
                     break;
                 }
             //No Security Group module found - fall through.
+            // no break
             case 'role':
                 $users = $this->getRoleUsers($distributionOptions[2]);
                 break;
@@ -184,7 +194,7 @@ class AOPAssignManager
         if ($this->leastBusyUsers) {
             return $this->leastBusyUsers;
         }
-        global $db;
+        $db = DBManagerFactory::getInstance();
         $idIn = implode("','", $db->arrayQuote(array_keys($this->assignableUsers)));
         if ($idIn) {
             $idIn = "'".$idIn."'";
@@ -205,9 +215,8 @@ class AOPAssignManager
     {
         $leastBusyCounts = $this->getLeastBusyCounts();
         asort($leastBusyCounts);
-        reset($leastBusyCounts);
 
-        return key($leastBusyCounts);
+        return array_key_first($leastBusyCounts);
     }
 
     /**
@@ -263,6 +272,7 @@ class AOPAssignManager
      */
     private function getRoundRobinUser()
     {
+        $lastUser = [];
         $id = empty($this->ieX) ? '' : $this->ieX->id;
         $file = create_cache_directory('modules/AOP_Case_Updates/Users/').$id.'lastUser.cache.php';
         $lastUserId = '';
@@ -300,10 +310,7 @@ class AOPAssignManager
     \$lastUser = {$arrayString};
 ?>
 eoq;
-        if ($fh = @sugar_fopen($file, 'w')) {
-            fwrite($fh, $content);
-            fclose($fh);
-        }
+        sugar_file_put_contents($file, $content);
 
         return true;
     }

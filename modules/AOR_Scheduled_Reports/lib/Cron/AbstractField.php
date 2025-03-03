@@ -5,6 +5,7 @@ namespace Cron;
 /**
  * Abstract CRON expression field
  */
+#[\AllowDynamicProperties]
 abstract class AbstractField implements FieldInterface
 {
     /**
@@ -90,7 +91,7 @@ abstract class AbstractField implements FieldInterface
         }
 
         if ($dateValue > $offset && 0 === $stepSize) {
-          return false;
+            return false;
         }
 
         for ($i = $offset; $i <= $to; $i+= $stepSize) {

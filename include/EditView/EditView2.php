@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -50,6 +50,7 @@ require_once('include/EditView/SugarVCR.php');
  * New EditView
  * @api
  */
+#[\AllowDynamicProperties]
 class EditView
 {
     /**
@@ -261,17 +262,21 @@ class EditView
                     sugar_mkdir('modules/' . $this->module . '/metadata');
                 }
 
-                $fp = sugar_fopen('modules/' . $this->module . '/metadata/' . $metadataFileName . '.php', 'w');
-                fwrite($fp, $parser->parse($htmlFile, $dictionary[$focus->object_name]['fields'], $this->module));
-                fclose($fp);
+                sugar_file_put_contents(
+                    'modules/' . $this->module . '/metadata/' . $metadataFileName . '.php',
+                    $parser->parse($htmlFile, $dictionary[$focus->object_name]['fields'], $this->module)
+                );
             }
 
             // Flag an error... we couldn't create the best guess meta-data file
             if (!file_exists("modules/$this->module/metadata/$metadataFileName.php")) {
                 global $app_strings;
 
-                $error = str_replace('[file]', "modules/$this->module/metadata/$metadataFileName.php",
-                    $app_strings['ERR_CANNOT_CREATE_METADATA_FILE']);
+                $error = str_replace(
+                    '[file]',
+                    "modules/$this->module/metadata/$metadataFileName.php",
+                    (string) $app_strings['ERR_CANNOT_CREATE_METADATA_FILE']
+                );
                 $GLOBALS['log']->fatal($error);
                 echo $error;
                 die();
@@ -399,7 +404,7 @@ class EditView
 
         $this->sectionPanels = array();
         $this->sectionLabels = array();
-        if (!empty($this->defs['panels']) && count($this->defs['panels']) > 0) {
+        if (!empty($this->defs['panels']) && (is_countable($this->defs['panels']) ? count($this->defs['panels']) : 0) > 0) {
             $keys = array_keys($this->defs['panels']);
             if (is_numeric($keys[0])) {
                 $defaultPanel = $this->defs['panels'];
@@ -424,7 +429,7 @@ class EditView
                 $this->sectionPanels[strtoupper($key)] = $p;
             } else {
                 foreach ($p as $row => $rowDef) {
-                    $columnsInRows = count($rowDef);
+                    $columnsInRows = is_countable($rowDef) ? count($rowDef) : 0;
                     $columnsUsed = 0;
                     foreach ($rowDef as $col => $colDef) {
                         $panel[$row][$col] = is_array($p[$row][$col])
@@ -451,7 +456,6 @@ class EditView
                         }
 
                         $itemCount++;
-
                     }
                 }
 
@@ -478,7 +482,7 @@ class EditView
     {
         $addFiller = true;
         foreach ($panel as $row) {
-            if (count($row) == $this->defs['templateMeta']['maxColumns']
+            if ((is_countable($row) ? count($row) : 0) == $this->defs['templateMeta']['maxColumns']
                 || 1 == count($panel)
             ) {
                 $addFiller = false;
@@ -488,7 +492,7 @@ class EditView
 
         if ($addFiller) {
             $rowCount = count($panel);
-            $filler = count($panel[$rowCount - 1]);
+            $filler = is_countable($panel[$rowCount - 1]) ? count($panel[$rowCount - 1]) : 0;
             while ($filler < $this->defs['templateMeta']['maxColumns']) {
                 $panel[$rowCount - 1][$filler++] = array('field' => array('name' => ''));
             }
@@ -520,7 +524,7 @@ class EditView
         }
 
         if (isset($_REQUEST['offset'])) {
-            $this->offset = $_REQUEST['offset'] - 1;
+            $this->offset = (int)$_REQUEST['offset'] - 1;
         }
 
         if ($this->showVCRControl) {
@@ -528,7 +532,8 @@ class EditView
                 'PAGINATION',
                 SugarVCR::menu(
                     $this->module,
-                    $this->offset, $this->focus->is_AuditEnabled(),
+                    $this->offset,
+                    $this->focus->is_AuditEnabled(),
                     $this->view === 'EditView'
                 )
             );
@@ -584,8 +589,11 @@ class EditView
 
                 foreach (array("formula", "default", "comments", "help") as $toEscape) {
                     if (!empty($this->fieldDefs[$name][$toEscape])) {
-                        $this->fieldDefs[$name][$toEscape] = htmlentities($this->fieldDefs[$name][$toEscape],
-                            ENT_QUOTES, 'UTF-8');
+                        $this->fieldDefs[$name][$toEscape] = htmlentities(
+                            (string) $this->fieldDefs[$name][$toEscape],
+                            ENT_QUOTES,
+                            'UTF-8'
+                        );
                     }
                 }
 
@@ -651,7 +659,8 @@ class EditView
                         $this->fieldDefs[$name]['options'] = call_user_func(
                             $function,
                             $this->focus,
-                            $name, $value,
+                            $name,
+                            $value,
                             $this->view
                         );
                     }
@@ -762,7 +771,8 @@ class EditView
             }
         }
 
-        $this->th->ss->assign('id', $this->fieldDefs['id']['value']);
+        $fieldDefsIdValue = isset($this->fieldDefs['id']['value']) ? $this->fieldDefs['id']['value'] : null;
+        $this->th->ss->assign('id', $fieldDefsIdValue);
         $this->th->ss->assign('offset', $this->offset + 1);
         $this->th->ss->assign('APP', $app_strings);
         $this->th->ss->assign('MOD', $mod_strings);
@@ -774,21 +784,31 @@ class EditView
         $this->th->ss->assign('returnId', $this->returnId);
         $this->th->ss->assign('isDuplicate', $this->isDuplicate);
         $this->th->ss->assign('def', $this->defs);
-        $this->th->ss->assign('useTabs',
-            isset($this->defs['templateMeta']['useTabs']) && isset($this->defs['templateMeta']['tabDefs']) ? $this->defs['templateMeta']['useTabs'] : false);
-        $this->th->ss->assign('maxColumns',
-            isset($this->defs['templateMeta']['maxColumns']) ? $this->defs['templateMeta']['maxColumns'] : 2);
+        $this->th->ss->assign(
+            'useTabs',
+            isset($this->defs['templateMeta']['useTabs']) && isset($this->defs['templateMeta']['tabDefs']) ? $this->defs['templateMeta']['useTabs'] : false
+        );
+        $this->th->ss->assign(
+            'maxColumns',
+            isset($this->defs['templateMeta']['maxColumns']) ? $this->defs['templateMeta']['maxColumns'] : 2
+        );
         $this->th->ss->assign('module', $this->module);
-        $this->th->ss->assign('headerTpl',
-            isset($this->defs['templateMeta']['form']['headerTpl']) ? $this->defs['templateMeta']['form']['headerTpl'] : 'include/' . $this->view . '/header.tpl');
-        $this->th->ss->assign('footerTpl',
-            isset($this->defs['templateMeta']['form']['footerTpl']) ? $this->defs['templateMeta']['form']['footerTpl'] : 'include/' . $this->view . '/footer.tpl');
+        $this->th->ss->assign(
+            'headerTpl',
+            isset($this->defs['templateMeta']['form']['headerTpl']) ? $this->defs['templateMeta']['form']['headerTpl'] : 'include/' . $this->view . '/header.tpl'
+        );
+        $this->th->ss->assign(
+            'footerTpl',
+            isset($this->defs['templateMeta']['form']['footerTpl']) ? $this->defs['templateMeta']['form']['footerTpl'] : 'include/' . $this->view . '/footer.tpl'
+        );
         $this->th->ss->assign('current_user', $current_user);
         $this->th->ss->assign('bean', $this->focus);
         $this->th->ss->assign('isAuditEnabled', $this->focus->is_AuditEnabled());
         $this->th->ss->assign('gridline', $current_user->getPreference('gridline') === 'on' ? '1' : '0');
-        $this->th->ss->assign('tabDefs',
-            isset($this->defs['templateMeta']['tabDefs']) ? $this->defs['templateMeta']['tabDefs'] : false);
+        $this->th->ss->assign(
+            'tabDefs',
+            isset($this->defs['templateMeta']['tabDefs']) ? $this->defs['templateMeta']['tabDefs'] : false
+        );
         $this->th->ss->assign('VERSION_MARK', getVersionedPath(''));
 
         global $js_custom_version;
@@ -822,8 +842,10 @@ class EditView
         }
 
         if (isset($this->defs['templateMeta']['form']['closeFormBeforeCustomButtons'])) {
-            $this->th->ss->assign('closeFormBeforeCustomButtons',
-                $this->defs['templateMeta']['form']['closeFormBeforeCustomButtons']);
+            $this->th->ss->assign(
+                'closeFormBeforeCustomButtons',
+                $this->defs['templateMeta']['form']['closeFormBeforeCustomButtons']
+            );
         }
 
         if (isset($this->defs['templateMeta']['form']['enctype'])) {
@@ -844,10 +866,14 @@ class EditView
         $this->th->ss->assign('form_name', $form_name);
         $this->th->ss->assign('set_focus_block', get_set_focus_js());
 
-        $this->th->ss->assign('form',
-            isset($this->defs['templateMeta']['form']) ? $this->defs['templateMeta']['form'] : null);
-        $this->th->ss->assign('includes',
-            isset($this->defs['templateMeta']['includes']) ? $this->defs['templateMeta']['includes'] : null);
+        $this->th->ss->assign(
+            'form',
+            isset($this->defs['templateMeta']['form']) ? $this->defs['templateMeta']['form'] : null
+        );
+        $this->th->ss->assign(
+            'includes',
+            isset($this->defs['templateMeta']['includes']) ? $this->defs['templateMeta']['includes'] : null
+        );
         $this->th->ss->assign('view', $this->view);
 
 
@@ -861,12 +887,12 @@ class EditView
 
         $date_format = $timedate->get_cal_date_format();
         $time_separator = ':';
-        if (preg_match('/\d+([^\d])\d+([^\d]*)/s', $time_format, $match)) {
+        if (preg_match('/\d+([^\d])\d+([^\d]*)/s', (string) $time_format, $match)) {
             $time_separator = $match[1];
         }
 
         // Create Smarty variables for the Calendar picker widget
-        $t23 = strpos($time_format, '23') !== false ? '%H' : '%I';
+        $t23 = strpos((string) $time_format, '23') !== false ? '%H' : '%I';
         if (!isset($match[2]) || empty($match[2])) {
             $this->th->ss->assign('CALENDAR_FORMAT', $date_format . ' ' . $t23 . $time_separator . '%M');
         } else {
@@ -877,7 +903,7 @@ class EditView
         $this->th->ss->assign('CALENDAR_FDOW', $current_user->get_first_day_of_week());
         $this->th->ss->assign('TIME_SEPARATOR', $time_separator);
 
-        $seps = get_number_seperators();
+        $seps = get_number_separators();
         $this->th->ss->assign('NUM_GRP_SEP', $seps[0]);
         $this->th->ss->assign('DEC_SEP', $seps[1]);
 
@@ -908,38 +934,34 @@ class EditView
             $ajaxSave,
             $this->defs
         );
-
         /* BEGIN - SECURITY GROUPS */
         //if popup select add panel if user is a member of multiple groups to metadataFile
         global $sugar_config;
-        if (
-            $this->focus->module_dir !== "Users" &&
-            $this->focus->module_dir !== "SugarFeed" &&
-            $sugar_config['securitysuite_popup_select'] === true &&
-            isset($sugar_config['securitysuite_popup_select']) &&
-            empty($this->focus->fetched_row['id'])
-        ) {
+        if(isset($sugar_config['securitysuite_popup_select']) && $sugar_config['securitysuite_popup_select'] == true
+            && (empty($this->focus->fetched_row['id']) || ($_REQUEST['isDuplicate'] ?? false) === true) && $this->focus->module_dir != "Users" && $this->focus->module_dir != "SugarFeed") {
 
             //there are cases such as uploading an attachment to an email template where the request module may
             //not be the same as the current bean module. If that happens we can just skip it
             //however...let quickcreate through
-            if ($this->view !== 'QuickCreate' && (empty($_REQUEST['module']) || $_REQUEST['module'] !== $this->focus->module_dir)) {
-                return $str;
-            }
+            if($this->view != 'QuickCreate' && (empty($_REQUEST['module']) || $_REQUEST['module'] != $this->focus->module_dir)) return $str;
 
             require_once('modules/SecurityGroups/SecurityGroup.php');
-            $groupFocus = new SecurityGroup();
-            $security_modules = $groupFocus->getSecurityModules();
-            if (array_key_exists($this->focus->module_dir, $security_modules)) {
+            $security_modules = SecurityGroup::getSecurityModules();
+            if(array_key_exists($this->focus->module_dir,$security_modules)) {
                 global $current_user;
 
-                $group_count = $groupFocus->getMembershipCount($current_user->id);
-                if ($group_count > 1) {
+                $group_count = SecurityGroup::getMembershipCount($current_user->id);
+                if($group_count > 1) {
 
-                    $groups = $groupFocus->getUserSecurityGroups($current_user->id);
+                    //https://www.sugaroutfitters.com/support/securitysuite/2313
+                    //if there is a parent then use the groups on that record as the default selected
+                    //note: only the user's groups show in the drop down. A request may be made to include any already on parent
+                    $parent_groups = SecurityGroup::getParentGroups($this->focus);
+
+                    $groups = SecurityGroup::getUserSecurityGroups($current_user->id);
                     $group_options = '';
-                    foreach ($groups as $group) {
-                        $group_options .= '<option value="' . $group['id'] . '" label="' . $group['name'] . '" selected="selected">' . $group['name'] . '</option>';
+                    foreach($groups as $group) {
+                        $group_options .= '<option value="'.$group['id'].'" label="'.$group['name'].'" '.(empty($group['noninheritable'])?'selected="selected"':'').'>'.$group['name'].'</option>';
                     }
                     //multilingual support
                     global $current_language;
@@ -948,37 +970,22 @@ class EditView
                     $lbl_securitygroups_select = $ss_mod_strings['LBL_GROUP_SELECT'];
                     $lbl_securitygroups = $ss_mod_strings['LBL_LIST_FORM_TITLE'];
 
-                    $group_panel = <<<EOQ
-<div class="edit view edit508 " id="detailpanel_securitygroups">
-    <h4>&nbsp;&nbsp;
-    $lbl_securitygroups_select
-    </h4>
-    <table width="100%" cellspacing="1" cellpadding="0" border="0" class="edit view panelContainer" id="LBL_PANEL_SECURITYGROUPS">
-    <tbody><tr>
-    <td width="12.5%" valign="top" scope="col" id="account_type_label">
-        $lbl_securitygroups:
-    </td>
-    <td width="37.5%" valign="top">
-        <select title="" id="securitygroup_list" name="securitygroup_list[]" multiple="multiple" size="${group_count}">
-        $group_options
-        </select>
-    </td>
-    </tr>
-    </tbody></table>
-</div>
-EOQ;
-                    $group_panel = preg_replace("/[\r\n]+/", "", $group_panel);
-
+                    $smarty = new Sugar_Smarty();
+                    $smarty->assign('SECURITY_GROUP_SELECT', $lbl_securitygroups_select);
+                    $smarty->assign('SECURITY_GROUPS', $lbl_securitygroups);
+                    $smarty->assign('SECURITY_GROUP_OPTIONS', $group_options);
+                    $smarty->assign('SECURITY_GROUP_COUNT', $group_count);
+                    $group_panel = $smarty->fetch('include/EditView/SecurityGroups.tpl');
+                    $group_panel = preg_replace("/[\r\n]+/", '', (string) $group_panel);
                     $group_panel_append = <<<EOQ
-<script>
-    $('#${form_name}_tabs div:first').append($('${group_panel}'));
-</script>
+    <script>
+        $('#{$form_name}_tabs .panel-content').append($('{$group_panel}'));
+    </script>
 EOQ;
                     $str .= $group_panel_append;
                 }
             }
         }
-
         /* END - SECURITY GROUPS */
 
         return $str;
@@ -1073,8 +1080,11 @@ EOQ;
                 if (isset($request[$timeHourKey])
                     && isset($request[$timeMinuteKey])
                 ) {
-                    $d .= sprintf(' %s:%s', $request[$timeHourKey],
-                        $request[$timeMinuteKey]);
+                    $d .= sprintf(
+                        ' %s:%s',
+                        $request[$timeHourKey],
+                        $request[$timeMinuteKey]
+                    );
                 }
 
                 if (isset($request['meridiem'])) {
@@ -1131,4 +1141,3 @@ EOQ;
         return new TemplateHandler();
     }
 }
-

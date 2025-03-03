@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -34,17 +34,17 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
+#[\AllowDynamicProperties]
 class CasesController extends SugarController
 {
-
     public function action_get_kb_articles()
     {
         global $mod_strings;
@@ -61,12 +61,12 @@ class CasesController extends SugarController
         $offset = 0;
         $limit = 30;
 
-        $result = $GLOBALS['db']->limitQuery($query, $offset, $limit);
+        $result = DBManagerFactory::getInstance()->limitQuery($query, $offset, $limit);
 
         $echo = '<table>';
         $echo .= '<tr><th>' . $mod_strings['LBL_SUGGESTION_BOX_REL'] . '</th><th>' . $mod_strings['LBL_SUGGESTION_BOX_TITLE'] . '</th><th>' . $mod_strings['LBL_SUGGESTION_BOX_STATUS'] . '</th></tr>';
         $count = 1;
-        while ($row = $GLOBALS['db']->fetchByAssoc($result)) {
+        while ($row = DBManagerFactory::getInstance()->fetchByAssoc($result)) {
             $kb = BeanFactory::getBean('AOK_KnowledgeBase', $row['id']);
             $echo .= '<tr class="kb_article" data-id="' . $kb->id . '">';
             $echo .= '<td> &nbsp;' . $count . '</td>';
@@ -90,11 +90,11 @@ class CasesController extends SugarController
         global $mod_strings;
 
         $article_id = $_POST['article'];
-        $article = new AOK_KnowledgeBase();
+        $article = BeanFactory::newBean('AOK_KnowledgeBase');
         $article->retrieve($article_id);
 
         echo '<span class="tool-tip-title"><strong>' . $mod_strings['LBL_TOOL_TIP_TITLE'] . '</strong>' . $article->name . '</span><br />';
-        echo '<span class="tool-tip-title"><strong>' . $mod_strings['LBL_TOOL_TIP_BODY'] . '</strong></span>' . html_entity_decode($article->description);
+        echo '<span class="tool-tip-title"><strong>' . $mod_strings['LBL_TOOL_TIP_BODY'] . '</strong></span>' . html_entity_decode((string) $article->description);
 
         if (!$this->IsNullOrEmptyString($article->additional_info)) {
             echo '<hr id="tool-tip-separator">';
@@ -115,5 +115,4 @@ class CasesController extends SugarController
     {
         return (!isset($question) || trim($question) === '');
     }
-
 }

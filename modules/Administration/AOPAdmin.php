@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -34,8 +34,8 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 if (!defined('sugarEntry') || !sugarEntry) {
@@ -115,11 +115,16 @@ if (isset($_REQUEST['do']) && $_REQUEST['do'] == 'save') {
         $_REQUEST['joomla_account_creation_email_template_id'];
     $cfg->config['aop']['support_from_address'] = $_REQUEST['support_from_address'];
     $cfg->config['aop']['support_from_name'] = $_REQUEST['support_from_name'];
+
+    if(isset($_REQUEST['inbound_email_case_macro'])){
+        $cfg->config['inbound_email_case_subject_macro'] = $_REQUEST['inbound_email_case_macro'];
+    }
+
     /*
      * We save the case_status_changes array as json since the way config changes are persisted to config.php
      * means that removing entries is tricky. json simplifies this.
      */
-    $cfg->config['aop']['case_status_changes'] = json_encode(array_combine($_POST['if_status'], $_POST['then_status']));
+    $cfg->config['aop']['case_status_changes'] = json_encode(array_combine($_POST['if_status'] ?? [], $_POST['then_status'] ?? []));
     $cfg->saveConfig();
     header('Location: index.php?module=Administration&action=index');
     exit();
@@ -127,7 +132,8 @@ if (isset($_REQUEST['do']) && $_REQUEST['do'] == 'save') {
 $distribStrings = $app_list_strings['dom_email_distribution_for_auto_create'];
 unset($distribStrings['AOPDefault']);
 $distributionMethod = get_select_options_with_id($distribStrings, $cfg->config['aop']['distribution_method']);
-$distributionOptions = getAOPAssignField('distribution_options', $cfg->config['aop']['distribution_options']);
+$distributionOptionsValue = $cfg->config['aop']['distribution_options'] ?? '';
+$distributionOptions = getAOPAssignField('distribution_options', $distributionOptionsValue);
 
 if (!empty($cfg->config['aop']['distribution_user_id'])) {
     $distributionUserName = BeanFactory::getBean("Users", $cfg->config['aop']['distribution_user_id'])->name;
@@ -150,6 +156,10 @@ $closureEmailTemplateDropdown =
 $joomlaEmailTemplateDropdown =
     get_select_options_with_id($emailTemplateList, $cfg->config['aop']['joomla_account_creation_email_template_id']);
 
+$case = BeanFactory::newBean('Cases');
+$inboundEmailCaseMacro = $cfg->config['inbound_email_case_subject_macro'] ?? $case->getEmailSubjectMacro();
+
+$sugar_smarty->assign('inbound_email_case_macro', $inboundEmailCaseMacro);
 $sugar_smarty->assign('USER_EMAIL_TEMPLATES', $userEmailTemplateDropdown);
 $sugar_smarty->assign('CONTACT_EMAIL_TEMPLATES', $contactEmailTemplateDropdown);
 $sugar_smarty->assign('CREATION_EMAIL_TEMPLATES', $creationEmailTemplateDropdown);
@@ -169,11 +179,15 @@ $sugar_smarty->assign('error', $errors);
 $cBean = BeanFactory::getBean('Cases');
 $statusDropdown = get_select_options($app_list_strings[$cBean->field_name_map['status']['options']], '');
 $currentStatuses = '';
-foreach (json_decode($cfg->config['aop']['case_status_changes'], true) as $if => $then) {
-    $ifDropdown = get_select_options($app_list_strings[$cBean->field_name_map['status']['options']], $if);
-    $thenDropdown = get_select_options($app_list_strings[$cBean->field_name_map['status']['options']], $then);
-    $currentStatuses .= getStatusRowTemplate($mod_strings, $ifDropdown, $thenDropdown) . "\n";
+
+if ($cfg->config['aop']['case_status_changes']) {
+    foreach (json_decode((string) $cfg->config['aop']['case_status_changes']) as $if => $then) {
+        $ifDropdown = get_select_options($app_list_strings[$cBean->field_name_map['status']['options']], $if);
+        $thenDropdown = get_select_options($app_list_strings[$cBean->field_name_map['status']['options']], $then);
+        $currentStatuses .= getStatusRowTemplate($mod_strings, $ifDropdown, $thenDropdown) . "\n";
+    }
 }
+
 
 $sugar_smarty->assign('currentStatuses', $currentStatuses);
 
@@ -358,7 +372,7 @@ function getStatusRowTemplate($mod_strings, $ifDropdown, $thenDropdown)
         <td width="100">
             <select id='then_status_select[]' name='then_status[]'>{$thenDropdown}</select>
         </td>
-        <td><button class="removeStatusButton" type="button">{$mod_strings['LBL_AOP_REMOVE_STATUS']}</button></td>
+        <td><button class="removeStatusButton button" type="button">{$mod_strings['LBL_AOP_REMOVE_STATUS']}</button></td>
     </tr>
 EOF;
 

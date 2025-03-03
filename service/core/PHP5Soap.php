@@ -1,9 +1,10 @@
-/*********************************************************************************
+/**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
-
- * SuiteCRM is an extension to SugarCRM Community Edition developed by Salesagility Ltd.
- * Copyright (C) 2011 - 2014 Salesagility Ltd.
+ *
+ * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -14,7 +15,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -32,14 +33,15 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
- ********************************************************************************/
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ */
 
 <?php
 require('service/core/SugarSoapService.php');
 require('include/nusoap/nusoap.php');
 
+#[\AllowDynamicProperties]
 abstract class PHP5Soap extends SugarSoapService{
 	private $nusoap_server = null;
 	public function __construct($url){
@@ -61,21 +63,21 @@ abstract class PHP5Soap extends SugarSoapService{
 	 * @return
 	 */
 	public function serve(){
-		ob_clean();
+        ob_clean();
 		global $HTTP_RAW_POST_DATA;
 		$GLOBALS['log']->debug("I am here1 ". $HTTP_RAW_POST_DATA);
 		$qs = '';
 		if (isset($_SERVER['QUERY_STRING'])) {
 			$qs = $_SERVER['QUERY_STRING'];
-		} elseif (isset($HTTP_SERVER_VARS['QUERY_STRING'])) {
-			$qs = $HTTP_SERVER_VARS['QUERY_STRING'];
+		} elseif (isset($_SERVER['QUERY_STRING'])) {
+			$qs = $_SERVER['QUERY_STRING'];
 		} else {
 			$qs = '';
 		}
 
-		if (stristr($qs, 'wsdl') || $HTTP_RAW_POST_DATA == ''){
+		if (stristr((string) $qs, 'wsdl') || $HTTP_RAW_POST_DATA == ''){
 			$wsdlCacheFile = $this->getWSDLPath(false);
-			if (stristr($qs, 'wsdl')) {
+			if (stristr((string) $qs, 'wsdl')) {
 			    $contents = @sugar_file_get_contents($wsdlCacheFile);
 			    if($contents !== false) {
 					header("Content-Type: text/xml; charset=ISO-8859-1\r\n");
@@ -151,7 +153,7 @@ abstract class PHP5Soap extends SugarSoapService{
 		parent::setObservers();
 	}
 
-	function registerClass($registryClass){
+	public function registerClass($registryClass){
 		$this->registryClass = $registryClass;
 	}
 
@@ -159,7 +161,7 @@ abstract class PHP5Soap extends SugarSoapService{
 		$this->nusoap_server->wsdl->addComplexType($name, $typeClass, $phpType, $compositor, $restrictionBase, $elements, $attrs, $arrayType);
   	}
 
-	function registerFunction($function, $input, $output){
+	public function registerFunction($function, $input, $output){
 		if(in_array($function, $this->excludeFunctions))return;
 		if ($this->nusoap_server == null) {
 			$this->generateNuSoap();

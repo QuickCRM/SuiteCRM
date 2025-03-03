@@ -1,5 +1,43 @@
-
-
+{*
+/**
+ *
+ * SugarCRM Community Edition is a customer relationship management program developed by
+ * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
+ *
+ * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License version 3 as published by the
+ * Free Software Foundation with the addition of the following permission added
+ * to Section 15 as permitted in Section 7(a): FOR ANY PART OF THE COVERED WORK
+ * IN WHICH THE COPYRIGHT IS OWNED BY SUGARCRM, SUGARCRM DISCLAIMS THE WARRANTY
+ * OF NON INFRINGEMENT OF THIRD PARTY RIGHTS.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program; if not, see http://www.gnu.org/licenses or write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
+ *
+ * You can contact SugarCRM, Inc. headquarters at 10050 North Wolfe Road,
+ * SW2-130, Cupertino, CA 95014, USA. or at email address contact@sugarcrm.com.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "Powered by
+ * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ */
+*}
 <form id="ConfigureSettings" name="ConfigureSettings" enctype='multipart/form-data' method="POST"
       action="index.php?module=Administration&action=AOPAdmin&do=save">
 
@@ -111,8 +149,8 @@
                 true
                 );' >
     {/literal}
-    <img src="themes/default/images/id-ff-select.png"></button><button type="button" name="btn_clr_distribution_user_name" id="btn_clr_distribution_user_name" tabindex="0" title="Clear User"  class="button lastChild"
-                                                                                                onclick="SUGAR.clearRelateField(this.form, 'distribution_user_name', 'distribution_user_id');"  value="Clear User" ><img src="themes/default/images/id-ff-clear.png"></button>
+    <span class="suitepicon suitepicon-action-select"></span></button><button type="button" name="btn_clr_distribution_user_name" id="btn_clr_distribution_user_name" tabindex="0" title="Clear User"  class="button lastChild"
+                                                                                                onclick="SUGAR.clearRelateField(this.form, 'distribution_user_name', 'distribution_user_id');"  value="Clear User" ><span class="suitepicon suitepicon-action-clear"></span></button>
 </span>
                 <script type="text/javascript">
                     {literal}
@@ -143,7 +181,7 @@
             <th align="left" scope="row" colspan="4"><h4>{$MOD.LBL_AOP_CASE_STATUS_SETTINGS}</h4></th>
         </tr>
         {$currentStatuses}
-        <tr><td><button type='button' id="addStatusButton">{$MOD.LBL_AOP_ADD_STATUS}</button></td></tr>
+        <tr><td><button class="button" type='button' id="addStatusButton">{$MOD.LBL_AOP_ADD_STATUS}</button></td></tr>
     </table>
     <table id='email_settings' width="100%" border="0" cellspacing="1" cellpadding="0" class="edit view">
         <tr><th align="left" scope="row" colspan="4"><h4>{$MOD.LBL_AOP_EMAIL_SETTINGS}</h4></th>
@@ -151,13 +189,22 @@
         <tr>
             <td  scope="row" width="200">{$MOD.LBL_SUPPORT_FROM_ADDRESS}: </td>
             <td  >
-                <input type="text" name="support_from_address" id="support_from_address" value="{$config.support_from_address}">
-            </td>
+                <input type="text" name="support_from_address" id="support_from_address" value="{$config.support_from_address}">            </td>
         </tr>
         <tr>
             <td  scope="row" width="200">{$MOD.LBL_SUPPORT_FROM_NAME}: </td>
             <td  >
                 <input type="text" name="support_from_name" id="support_from_name" value="{$config.support_from_name}">
+            </td>
+        </tr>
+        <tr>
+            <td  scope="row" width="200">{$MOD.LBL_CASE_MACRO}: </td>
+            <td  >
+                <input type="text" name="inbound_email_case_macro" id="inbound_email_case_macro" value="{$inbound_email_case_macro}">
+                <span>
+                    {$MOD.LBL_CASE_MACRO_DESC}
+                    <i>{$MOD.LBL_CASE_MACRO_DESC2}</i>
+                </span>
             </td>
         </tr>
         <tr id="user_email_template_row">

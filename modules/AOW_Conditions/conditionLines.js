@@ -125,7 +125,11 @@ function showConditionCurrentModuleFields(ln, value){
 function showModuleField(ln, operator_value, type_value, field_value){
     if (typeof operator_value === 'undefined') { operator_value = ''; }
     if (typeof type_value === 'undefined') { type_value = ''; }
-    if (typeof field_value === 'undefined') { field_value = ''; }
+    var is_value_set = true;
+    if (typeof field_value === 'undefined') {
+        field_value = '';
+        is_value_set = false;
+    }
 
     var rel_field = document.getElementById('aow_conditions_module_path'+ln).value;
     var aow_field = document.getElementById('aow_conditions_field'+ln).value;
@@ -169,7 +173,7 @@ function showModuleField(ln, operator_value, type_value, field_value){
 
         YAHOO.util.Connect.asyncRequest ("GET", "index.php?module=AOW_WorkFlow&action=getModuleOperatorField&view="+action_sugar_grp1+"&aow_module="+flow_module+"&aow_fieldname="+aow_field+"&aow_newfieldname="+aow_operator_name+"&aow_value="+operator_value+"&rel_field="+rel_field,callback);
         YAHOO.util.Connect.asyncRequest ("GET", "index.php?module=AOW_WorkFlow&action=getFieldTypeOptions&view="+action_sugar_grp1+"&aow_module="+flow_module+"&aow_fieldname="+aow_field+"&aow_newfieldname="+aow_field_type_name+"&aow_value="+type_value+"&rel_field="+rel_field,callback2);
-        YAHOO.util.Connect.asyncRequest ("GET", "index.php?module=AOW_WorkFlow&action=getModuleFieldType&view="+action_sugar_grp1+"&aow_module="+flow_module+"&aow_fieldname="+aow_field+"&aow_newfieldname="+aow_field_name+"&aow_value="+field_value+"&aow_type="+type_value+"&rel_field="+rel_field,callback3);
+        YAHOO.util.Connect.asyncRequest ("GET", "index.php?module=AOW_WorkFlow&action=getModuleFieldType&view="+action_sugar_grp1+"&aow_module="+flow_module+"&aow_fieldname="+aow_field+"&aow_newfieldname="+aow_field_name+"&aow_value="+field_value+"&is_value_set="+is_value_set+"&aow_type="+type_value+"&rel_field="+rel_field,callback3);
 
     } else {
         document.getElementById('aow_conditions_operatorInput'+ln).innerHTML = ''
@@ -217,7 +221,7 @@ function showModuleFieldType(ln, value){
 function insertConditionHeader(){
     tablehead = document.createElement("thead");
     tablehead.id = "conditionLines_head";
-    document.getElementById('conditionLines').appendChild(tablehead);
+    document.getElementById('aow_conditionLines').appendChild(tablehead);
 
     var x=tablehead.insertRow(-1);
     x.id='conditionLines_head';
@@ -226,23 +230,18 @@ function insertConditionHeader(){
     //a.style.color="rgb(68,68,68)";
 
     var b=x.insertCell(1);
-    b.style.color="rgb(0,0,0)";
     b.innerHTML=SUGAR.language.get('AOW_Conditions', 'LBL_MODULE_PATH');
 
     var c=x.insertCell(2);
-    c.style.color="rgb(0,0,0)";
     c.innerHTML=SUGAR.language.get('AOW_Conditions', 'LBL_FIELD');
 
     var d=x.insertCell(3);
-    d.style.color="rgb(0,0,0)";
     d.innerHTML=SUGAR.language.get('AOW_Conditions', 'LBL_OPERATOR');
 
     var e=x.insertCell(4);
-    e.style.color="rgb(0,0,0)";
     e.innerHTML=SUGAR.language.get('AOW_Conditions', 'LBL_VALUE_TYPE');
 
     var f=x.insertCell(5);
-    f.style.color="rgb(0,0,0)";
     f.innerHTML=SUGAR.language.get('AOW_Conditions', 'LBL_VALUE');
 }
 
@@ -257,18 +256,18 @@ function insertConditionLine(){
 
     tablebody = document.createElement("tbody");
     tablebody.id = "aow_conditions_body" + condln;
-    document.getElementById('conditionLines').appendChild(tablebody);
+    document.getElementById('aow_conditionLines').appendChild(tablebody);
 
 
     var x = tablebody.insertRow(-1);
-    x.id = 'product_line' + condln;
+    x.id = 'condition_line' + condln;
 
     var a = x.insertCell(0);
     if(action_sugar_grp1 == 'EditView'){
-        a.innerHTML = "<button type='button' id='aow_conditions_delete_line" + condln + "' class='button' value='' tabindex='116' onclick='markConditionLineDeleted(" + condln + ")'><img src='themes/default/images/id-ff-remove-nobg.png' alt=''></button><br>";
+        a.innerHTML = "<button type='button' id='aow_conditions_delete_line" + condln + "' class='button' value='' tabindex='116' onclick='markConditionLineDeleted(" + condln + ")'><span class='suitepicon suitepicon-action-minus'></span></button><br>";
         a.innerHTML += "<input type='hidden' name='aow_conditions_deleted[" + condln + "]' id='aow_conditions_deleted" + condln + "' value='0'><input type='hidden' name='aow_conditions_id[" + condln + "]' id='aow_conditions_id" + condln + "' value=''>";
     } else{
-        a.innerHTML = condln +1;
+        a.innerHTML = '';
     }
 
     var b = x.insertCell(1);
@@ -279,7 +278,7 @@ function insertConditionLine(){
     b.innerHTML += "<span style='"+viewStyle+"' id='aow_conditions_module_path_label" + condln + "' ></span>";
 
     var c = x.insertCell(2);
-    var viewStyle = 'display:none';
+    viewStyle = 'display:none';
     if(action_sugar_grp1 == 'EditView'){viewStyle = '';}
     c.innerHTML = "<select style='"+viewStyle+"' name='aow_conditions_field["+ condln +"]' id='aow_conditions_field" + condln + "' value='' title='' tabindex='116' onchange='showModuleField(" + condln + ");'>" + flow_fields + "</select>";
     if(action_sugar_grp1 == 'EditView'){viewStyle = 'display:none';}else{viewStyle = '';}
@@ -298,7 +297,7 @@ function insertConditionLine(){
     condln++;
     condln_count++;
 
-    $('.edit-view-field #conditionLines').find('tbody').last().find('select').change(function () {
+    $('.edit-view-field #aow_conditionLines').find('tbody').last().find('select').change(function () {
         $(this).find('td').last().removeAttr("style");
         $(this).find('td').height($(this).find('td').last().height() + 8);
     });
@@ -337,8 +336,8 @@ function markConditionLineDeleted(ln)
 
 function clearConditionLines(){
 
-    if(document.getElementById('conditionLines') != null){
-        var cond_rows = document.getElementById('conditionLines').getElementsByTagName('tr');
+    if(document.getElementById('aow_conditionLines') != null){
+        var cond_rows = document.getElementById('aow_conditionLines').getElementsByTagName('tr');
         var cond_row_length = cond_rows.length;
         var i;
         for (i=0; i < cond_row_length; i++) {

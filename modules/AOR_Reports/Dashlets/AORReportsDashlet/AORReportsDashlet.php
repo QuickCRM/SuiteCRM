@@ -7,14 +7,15 @@ if (!defined('sugarEntry') || !sugarEntry) {
 require_once('include/Dashlets/Dashlet.php');
 require_once 'modules/AOR_Reports/aor_utils.php';
 
+#[\AllowDynamicProperties]
 class AORReportsDashlet extends Dashlet
 {
-    var $def;
-    var $report;
-    var $charts;
-    var $onlyCharts;
+    public $def;
+    public $report;
+    public $charts;
+    public $onlyCharts;
 
-    function __construct($id, $def = array())
+    public function __construct($id, $def = array())
     {
         global $current_user, $app_strings;
 
@@ -40,29 +41,17 @@ class AORReportsDashlet extends Dashlet
         }
         if (!empty($def['aor_report_id'])) {
             $this->report = BeanFactory::getBean('AOR_Reports', $def['aor_report_id']);
-            $this->report->user_parameters = $this->params;
+            if($this->report !== false) {
+                $this->report->user_parameters = $this->params;
+            }
         }
         $this->onlyCharts = !empty($def['onlyCharts']);
         $this->charts = !empty($def['charts']) ? $def['charts'] : array();
     }
 
-    /**
-     * @deprecated deprecated since version 7.6, PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code, use __construct instead
-     */
-    function AORReportsDashlet($id, $def = array())
-    {
-        $deprecatedMessage = 'PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code';
-        if (isset($GLOBALS['log'])) {
-            $GLOBALS['log']->deprecated($deprecatedMessage);
-        } else {
-            trigger_error($deprecatedMessage, E_USER_DEPRECATED);
-        }
-        self::__construct($id, $def);
-    }
-
     public function display()
     {
-        global $current_language;
+        global $current_language,$mod_strings;
         $mod_strings = return_module_language($current_language, 'AOR_Reports');
         $dashletSmarty = new Sugar_Smarty();
         $dashletTemplate = get_custom_file_if_exists('modules/AOR_Reports/Dashlets/AORReportsDashlet/dashlet.tpl');
@@ -81,7 +70,7 @@ class AORReportsDashlet extends Dashlet
         return $dashletSmarty->fetch($dashletTemplate);
     }
 
-    function getChartHTML()
+    public function getChartHTML()
     {
         if (!empty($this->report->id)) {
             //return $this->report->build_report_chart($this->charts, AOR_Report::CHART_TYPE_CHARTJS);
@@ -91,14 +80,14 @@ class AORReportsDashlet extends Dashlet
         }
     }
 
-    function process()
+    public function process()
     {
     }
 
     public function displayOptions()
     {
         ob_start();
-        global $current_language, $app_list_strings, $datetime;
+        global $current_language, $app_list_strings, $datetime,$mod_strings;
         $mod_strings = return_module_language($current_language, 'AOR_Reports');
         $optionsSmarty = new Sugar_Smarty();
         $optionsSmarty->assign('MOD', $mod_strings);
@@ -151,9 +140,11 @@ class AORReportsDashlet extends Dashlet
             'parameter_type',
             'parameter_operator'
         ));
+        // Fix for issue #1700 - save value as db type
+        $itemsCount = is_countable($req['parameter_value']) ? count($req['parameter_value']) : 0;
 
         // Fix for issue #1700 - save value as db type
-        for ($i = 0; $i < count($req['parameter_value']); $i++) {
+        for ($i = 0; $i < $itemsCount; $i++) {
             if (isset($req['parameter_value'][$i]) && $req['parameter_value'][$i] != '') {
                 global $current_user, $timedate;
                 $user_date_format = $timedate->get_date_format($current_user);

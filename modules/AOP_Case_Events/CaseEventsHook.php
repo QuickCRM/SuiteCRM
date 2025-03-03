@@ -1,10 +1,11 @@
 <?php
 /**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -15,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -33,16 +34,16 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 /**
  * Class CaseEventsHook.
  */
+#[\AllowDynamicProperties]
 class CaseEventsHook
 {
-
     private static $diffFields = array(
         array('field' => 'priority', 'display_field' => 'priority', 'display_name' => 'Priority'),
         array('field' => 'status', 'display_field' => 'status', 'display_name' => 'Status'),
@@ -70,9 +71,9 @@ class CaseEventsHook
             if ((isset($old->$fieldName) ? $old->$fieldName : null) !==
                 (isset($new->$fieldName) ? $new->$fieldName : null)
             ) {
-                $event = new AOP_Case_Events();
-                $oldDisplay = $old->$displayField;
-                $newDisplay = $new->$displayField;
+                $event = BeanFactory::newBean('AOP_Case_Events');
+                $oldDisplay = $old->$displayField ?? '';
+                $newDisplay = $new->$displayField ?? '';
                 $desc = $name . ' changed from ' . $oldDisplay . ' to ' . $newDisplay . '.';
                 $event->name = $desc;
                 $event->description = $desc;
@@ -96,7 +97,7 @@ class CaseEventsHook
         if (isset($_REQUEST['module']) && $_REQUEST['module'] === 'Import') {
             return;
         }
-        $oldBean = new aCase();
+        $oldBean = BeanFactory::newBean('Cases');
         $oldBean->retrieve($bean->id);
         $events = $this->compareBeans($oldBean, $bean);
         foreach ($events as $event) {

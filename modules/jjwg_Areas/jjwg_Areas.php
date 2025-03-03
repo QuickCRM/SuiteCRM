@@ -1,63 +1,53 @@
 <?php
 
-if (!defined('sugarEntry') || !sugarEntry)
+if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
+}
 
 require_once('modules/jjwg_Areas/jjwg_Areas_sugar.php');
 require_once('modules/jjwg_Maps/jjwg_Maps.php');
 
-class jjwg_Areas extends jjwg_Areas_sugar {
+#[\AllowDynamicProperties]
+class jjwg_Areas extends jjwg_Areas_sugar
+{
 
     /**
      * @var settings array
      */
-    var $settings = array();
+    public $settings = array();
     /**
      * coords processed from coordinates string
      * @var array of strings ('lng,lat,elv')
      */
-    var $coords = array();
+    public $coords = array();
     /**
      * polygon processed from coordinates strings
      * @var array of arrays (keys: lng, lat, elv)
      */
-    var $polygon = null;
+    public $polygon = null;
     /**
      * Point in Area/Polygon check on vertices
      * @var boolean
      */
-    var $point_on_vertex = true;
+    public $point_on_vertex = true;
     /**
      * @area Polygon Area
      */
-    var $area = 0;
+    public $area = 0;
     /**
      * Polygon Centroid (Area Balance Center)
      * @var array (keys: lng, lat, elv)
      */
-    var $centroid = null;
+    public $centroid = null;
 
-    function __construct($init=true) {
-
+    public function __construct($init=true)
+    {
         parent::__construct();
         // Admin Config Setting
-        if($init) $this->configuration();
-    }
-
-    /**
-     * @deprecated deprecated since version 7.6, PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code, use __construct instead
-     */
-    function jjwg_Areas($init=true){
-        $deprecatedMessage = 'PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code';
-        if(isset($GLOBALS['log'])) {
-            $GLOBALS['log']->deprecated($deprecatedMessage);
+        if ($init) {
+            $this->configuration();
         }
-        else {
-            trigger_error($deprecatedMessage, E_USER_DEPRECATED);
-        }
-        self::__construct($init);
     }
-
 
     /**
      * Load Configuration Settings using Administration Module
@@ -65,17 +55,17 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * $GLOBALS['jjwg_config_defaults']
      * $GLOBALS['jjwg_config']
      */
-    function configuration() {
-
-        $this->jjwg_Maps = new jjwg_Maps();
+    public function configuration()
+    {
+        $this->jjwg_Maps = BeanFactory::newBean('jjwg_Maps');
         $this->settings = $GLOBALS['jjwg_config'];
     }
 
     /**
      * Retrieve object by id
      */
-    function retrieve($id = -1, $encode = true, $deleted = true) {
-
+    public function retrieve($id = -1, $encode = true, $deleted = true)
+    {
         parent::retrieve($id, $encode, $deleted);
 
         $this->polygon = $this->define_polygon();
@@ -89,18 +79,20 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      *
      * Define polygon coordinates
      */
-    function define_polygon() {
+    public function define_polygon()
+    {
+        if (!empty($this->polygon)) {
+            return $this->polygon;
+        }
 
-        if (!empty($this->polygon)) return $this->polygon;
-
-        if (preg_match('/[\n\r]/', $this->coordinates)) {
-            $this->coords = preg_split("/[\n\r\s]+/", $this->coordinates, null, PREG_SPLIT_NO_EMPTY);
+        if (preg_match('/[\n\r]/', (string) $this->coordinates)) {
+            $this->coords = preg_split("/[\n\r\s]+/", (string) $this->coordinates, null, PREG_SPLIT_NO_EMPTY);
         } else {
-            $this->coords = preg_split("/[\s]+/", $this->coordinates, null, PREG_SPLIT_NO_EMPTY);
+            $this->coords = preg_split("/[\s]+/", (string) $this->coordinates, null, PREG_SPLIT_NO_EMPTY);
         }
         if (count($this->coords) > 0) {
             foreach ($this->coords as $coord) {
-                $p = preg_split("/[\s\(\)]*,[\s\(\)]*/", $coord, null, PREG_SPLIT_NO_EMPTY);
+                $p = preg_split("/[\s\(\)]*,[\s\(\)]*/", (string) $coord, null, PREG_SPLIT_NO_EMPTY);
                 if ($this->is_valid_lng($p[0]) && $this->is_valid_lat($p[1])) {
                     $this->polygon[] = array(
                         'lng' => $p[0],
@@ -110,7 +102,12 @@ class jjwg_Areas extends jjwg_Areas_sugar {
                 }
             }
         }
-        if (count($this->polygon) > 0) {
+
+        if (!is_array($this->polygon)) {
+            LoggerManager::getLogger()->warn('Parameter must be an array or an object that implements Countable');
+        }
+
+        if (count((array)$this->polygon) > 0) {
             return $this->polygon;
         } else {
             return false;
@@ -123,12 +120,17 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * (Center of Gravity or Balance Point)
      *
      */
-    function define_area_loc() {
-
+    public function define_area_loc()
+    {
         $loc = array();
         $loc['name'] = $this->name;
-        $loc['lng'] = $this->centroid['lng'];
-        $loc['lat'] = $this->centroid['lat'];
+        if (!is_null($this->centroid)) {
+            $loc['lng'] = $this->centroid['lng'];
+            $loc['lat'] = $this->centroid['lat'];
+        } else {
+            $loc['lng'] = null;
+            $loc['lat'] = null;
+        }
         $loc = $this->define_loc($loc);
 
         return $loc;
@@ -138,15 +140,21 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Define Centroid - Point
      * @return type
      */
-    function define_centroid() {
+    public function define_centroid()
+    {
+        if (!empty($this->centroid)) {
+            return $this->centroid;
+        }
 
-        if (!empty($this->centroid)) return $this->centroid;
+        if (empty($this->polygon)) {
+            $this->polygon = $this->define_polygon();
+        }
 
-        if (empty($this->polygon)) $this->polygon = $this->define_polygon();
-
-        $n = count($this->polygon);
+        $n = is_countable($this->polygon) ? count($this->polygon) : 0;
         $a = $this->define_area($this->polygon);
-        if (empty($a)) return $this->centroid;
+        if (empty($a)) {
+            return $this->centroid;
+        }
         $cx = 0.0;
         $cy = 0.0;
         // Set $p as Polygon and Add Closing Point
@@ -154,8 +162,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
         $p[] = $p[0];
 
         for ($i = 0; $i < $n; $i++) {
-            $cx += ($p[$i]['lng'] + $p[$i+1]['lng']) * ( ($p[$i]['lng'] * $p[$i+1]['lat']) - ($p[$i+1]['lng'] * $p[$i]['lat']) );
-            $cy += ($p[$i]['lat'] + $p[$i+1]['lat']) * ( ($p[$i]['lng'] * $p[$i+1]['lat']) - ($p[$i+1]['lng'] * $p[$i]['lat']) );
+            $cx += ($p[$i]['lng'] + $p[$i+1]['lng']) * (($p[$i]['lng'] * $p[$i+1]['lat']) - ($p[$i+1]['lng'] * $p[$i]['lat']));
+            $cy += ($p[$i]['lat'] + $p[$i+1]['lat']) * (($p[$i]['lng'] * $p[$i+1]['lat']) - ($p[$i+1]['lng'] * $p[$i]['lat']));
         }
         $centroid_lng = -(1/(6*$a))*$cx;
         $centroid_lat = -(1/(6*$a))*$cy;
@@ -175,14 +183,18 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Define Polygon Area
      * @return type
      */
-    function define_area() {
+    public function define_area()
+    {
+        if (!empty($this->area)) {
+            return $this->area;
+        }
 
-        if (!empty($this->area)) return $this->area;
-
-        if (empty($this->polygon)) $this->polygon = $this->define_polygon();
+        if (empty($this->polygon)) {
+            $this->polygon = $this->define_polygon();
+        }
 
         // Based on: http://forums.devnetwork.net/viewtopic.php?f=1&t=44074
-        $n = count($this->polygon);
+        $n = is_countable($this->polygon) ? count($this->polygon) : 0;
         $area = 0.0;
         // Set $p as Polygon and Add Closing Point
         $p = $this->polygon;
@@ -204,8 +216,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Define Marker Location
      * @param $marker mixed (array or object)
      */
-    function define_loc($marker = array()) {
-
+    public function define_loc($marker = array())
+    {
         $loc = array();
         if (is_object($marker)) {
             $loc['name'] = $marker->name;
@@ -217,8 +229,13 @@ class jjwg_Areas extends jjwg_Areas_sugar {
             $loc['lng'] = $marker['lng'];
         } else {
             $loc['name'] = '';
-            $loc['lat'] = $this->centroid['lat'];
-            $loc['lng'] = $this->centroid['lng'];
+            if (is_null($this->centroid)) {
+                $loc['lat'] = null;
+                $loc['lng'] = null;
+            } else {
+                $loc['lat'] = $this->centroid['lat'];
+                $loc['lng'] = $this->centroid['lng'];
+            }
         }
 
         if (empty($loc['name'])) {
@@ -238,7 +255,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Check for valid longitude
      * @param $lng float
      */
-    function is_valid_lng($lng) {
+    public function is_valid_lng($lng)
+    {
         return (is_numeric($lng) && $lng >= -180 && $lng <= 180);
     }
 
@@ -247,7 +265,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Check for valid latitude
      * @param $lat float
      */
-    function is_valid_lat($lat) {
+    public function is_valid_lat($lat)
+    {
         return (is_numeric($lat) && $lat >= -90 && $lat <= 90);
     }
 
@@ -255,8 +274,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * Determine if Marker Object is in Area (Polygon)
      * @param object $marker
      */
-    function is_marker_in_area($marker) {
-
+    public function is_marker_in_area($marker)
+    {
         $loc = array();
         if (is_object($marker)) {
             $loc['lat'] = $marker->jjwg_maps_lat;
@@ -275,7 +294,8 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * @param float $lng
      * @param float $lat
      */
-    function is_point_in_area($lng, $lat) {
+    public function is_point_in_area($lng, $lat)
+    {
 
         // lng,lat,elv
         $point = $lng.','.$lat.',0.0';
@@ -293,15 +313,19 @@ class jjwg_Areas extends jjwg_Areas_sugar {
      * @param boolean $point_on_vertex
      * @return boolean
      */
-    function point_in_polygon($point, $point_on_vertex = true) {
-
+    public function point_in_polygon($point, $point_on_vertex = true)
+    {
         $this->point_on_vertex = $point_on_vertex;
-        $polygon = preg_split('/[\s]+/', $this->coordinates);
+        $polygon = preg_split('/[\s]+/', (string) $this->coordinates);
 
         // Chek $polygon count
-        if (!(count($polygon) > 1)) return false;
+        if (!((is_countable($polygon) ? count($polygon) : 0) > 1)) {
+            return false;
+        }
         // Add the first point to the end, in order to properly close the loop completely
-        if ($polygon[count($polygon)-1] != $polygon[0]) $polygon[] = $polygon[0];
+        if ($polygon[(is_countable($polygon) ? count($polygon) : 0)-1] !== $polygon[0]) {
+            $polygon[] = $polygon[0];
+        }
 
         // Transform string coordinates into arrays with x and y values
         $point = $this->point_string_to_coordinates($point);
@@ -311,7 +335,7 @@ class jjwg_Areas extends jjwg_Areas_sugar {
         }
 
         // Check if the point sits exactly on a vertex
-        if ($this->point_on_vertex == true and $this->point_on_vertex($point, $vertices) == true) {
+        if ($this->point_on_vertex == true && $this->point_on_vertex($point, $vertices) == true) {
             return true;
         }
 
@@ -322,10 +346,10 @@ class jjwg_Areas extends jjwg_Areas_sugar {
         for ($i=1; $i < $vertices_count; $i++) {
             $vertex1 = $vertices[$i-1];
             $vertex2 = $vertices[$i];
-            if ($vertex1['y'] == $vertex2['y'] and $vertex1['y'] == $point['y'] and $point['x'] > min($vertex1['x'], $vertex2['x']) and $point['x'] < max($vertex1['x'], $vertex2['x'])) { // Check if point is on an horizontal polygon boundary
+            if ($vertex1['y'] == $vertex2['y'] && $vertex1['y'] == $point['y'] && $point['x'] > min($vertex1['x'], $vertex2['x']) && $point['x'] < max($vertex1['x'], $vertex2['x'])) { // Check if point is on an horizontal polygon boundary
                 return true;
             }
-            if ($point['y'] > min($vertex1['y'], $vertex2['y']) and $point['y'] <= max($vertex1['y'], $vertex2['y']) and $point['x'] <= max($vertex1['x'], $vertex2['x']) and $vertex1['y'] != $vertex2['y']) {
+            if ($point['y'] > min($vertex1['y'], $vertex2['y']) && $point['y'] <= max($vertex1['y'], $vertex2['y']) && $point['x'] <= max($vertex1['x'], $vertex2['x']) && $vertex1['y'] != $vertex2['y']) {
                 $xinters = ($point['y'] - $vertex1['y']) * ($vertex2['x'] - $vertex1['x']) / ($vertex2['y'] - $vertex1['y']) + $vertex1['x'];
                 if ($xinters == $point['x']) { // Check if point is on the polygon boundary (other than horizontal)
                     return true;
@@ -343,21 +367,20 @@ class jjwg_Areas extends jjwg_Areas_sugar {
         }
     }
 
-    function point_on_vertex($point, $vertices) {
-
-        foreach($vertices as $vertex) {
+    public function point_on_vertex($point, $vertices)
+    {
+        foreach ($vertices as $vertex) {
             if ($point == $vertex) {
                 return true;
             }
         }
     }
 
-    function point_string_to_coordinates($pointString) {
+    public function point_string_to_coordinates($pointString)
+    {
 
         // Coordinate Results (lng,lat,elv)
-        $coordinates = preg_split('/[,]+/', $pointString);
+        $coordinates = preg_split('/[,]+/', (string) $pointString);
         return array("x" => $coordinates[0], "y" => $coordinates[1]);
     }
-
-
 }

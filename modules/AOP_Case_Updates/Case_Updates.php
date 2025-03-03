@@ -1,10 +1,11 @@
 <?php
 /**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -15,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -33,8 +34,8 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 /**
@@ -44,6 +45,10 @@
  */
 function display_updates($focus)
 {
+    if (empty($focus->id)) {
+        return '';
+    }
+
     global $mod_strings;
 
     $hideImage = SugarThemeRegistry::current()->getImageURL('basic_search.gif');
@@ -118,7 +123,7 @@ function caseUpdates(record){
 
             showSubPanel('history', null, true);
             //Reload the case updates stream and history panels
-		    $("#LBL_AOP_CASE_UPDATES").load("index.php?module=Cases&action=DetailView&record="+record + " #LBL_AOP_CASE_UPDATES", function(){
+		    $("#aop_case_updates_threaded_span").load("index.php?module=Cases&action=DetailView&record="+record + " #aop_case_updates_threaded_span", function(){
 
 
             //Collapse all except newest update
@@ -219,7 +224,7 @@ function getUpdateDisplayHead(SugarBean $update)
     } elseif ($update->assigned_user_id) {
         $name = $update->getUpdateUser()->name;
     } else {
-        $name = 'Unknown';
+        $name = $mod_strings['LBL_UNKNOWN_CONTACT'];
     }
     $html = "<a href='' onclick='toggleCaseUpdate(\"" . $update->id . "\");return false;'>";
     $html .= "<img  id='caseUpdate" .
@@ -261,14 +266,14 @@ function display_single_update(AOP_Case_Updates $update)
         if ($update->internal) {
             $html = "<div id='caseStyleInternal'>" . getUpdateDisplayHead($update);
             $html .= "<div id='caseUpdate" . $update->id . "' class='caseUpdate'>";
-            $html .= nl2br(html_entity_decode($update->description));
+            $html .= nl2br(html_entity_decode(purify_html((string) $update->description, ['HTML.ForbiddenElements' => ['iframe' => true]])));
             $html .= '</div></div>';
 
             return $html;
         } /*if standard update*/ else {
             $html = "<div id='lessmargin'><div id='caseStyleUser'>" . getUpdateDisplayHead($update);
             $html .= "<div id='caseUpdate" . $update->id . "' class='caseUpdate'>";
-            $html .= nl2br(html_entity_decode($update->description));
+            $html .= nl2br(html_entity_decode(purify_html((string) $update->description, ['HTML.ForbiddenElements' => ['iframe' => true]])));
             $html .= '</div></div></div>';
 
             return $html;
@@ -276,14 +281,12 @@ function display_single_update(AOP_Case_Updates $update)
     }
 
     /*if contact user*/
-    if ($update->contact_id) {
-        $html = "<div id='extramargin'><div id='caseStyleContact'>" . getUpdateDisplayHead($update);
-        $html .= "<div id='caseUpdate" . $update->id . "' class='caseUpdate'>";
-        $html .= nl2br(html_entity_decode($update->description));
-        $html .= '</div></div></div>';
+    $html = "<div id='extramargin'><div id='caseStyleContact'>" . getUpdateDisplayHead($update);
+    $html .= "<div id='caseUpdate" . $update->id . "' class='caseUpdate'>";
+    $html .= html_entity_decode(purify_html((string) $update->description, ['HTML.ForbiddenElements' => ['iframe' => true]]));
+    $html .= '</div></div></div>';
 
-        return $html;
-    }
+    return $html;
 }
 
 /**
@@ -296,6 +299,9 @@ function display_single_update(AOP_Case_Updates $update)
 function display_case_attachments($case)
 {
     $html = '';
+    if(empty($case->id)){
+        return '';
+    }
     $notes = $case->get_linked_beans('notes', 'Notes');
     if ($notes) {
         foreach ($notes as $note) {
@@ -334,7 +340,7 @@ function quick_edit_case_updates($case)
     require_once 'modules/ACLRoles/ACLRole.php';
     $user = $GLOBALS['current_user'];
     $id = $user->id;
-    $acl = new ACLRole();
+    $acl = BeanFactory::newBean('ACLRoles');
     $roles = $acl->getUserRoles($id);
 
     //Return if user cannot edit cases

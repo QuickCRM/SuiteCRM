@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2019 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -84,8 +84,8 @@ $mod_strings = array(
     'LBL_ROWS' => 'Rows',
     'LBL_CATEGORIES' => 'Modules',
     'LBL_TIME_LAST_WEEK' => 'Last Week',
-    'LBL_TIME_WEEKS' => 'Weeks',
-    'LBL_TIME_DAYS' => 'Days',
+    'LBL_TIME_WEEKS' => 'weeks',
+    'LBL_TIME_DAYS' => 'days',
     'LBL_TIME_YESTERDAY' => 'Yesterday',
     'LBL_TIME_HOURS' => 'Hours',
     'LBL_TIME_HOUR' => 'Hours',
@@ -93,17 +93,23 @@ $mod_strings = array(
     'LBL_TIME_MINUTE' => 'Minute',
     'LBL_TIME_SECONDS' => 'Seconds',
     'LBL_TIME_SECOND' => 'Second',
+    'LBL_TIME_AND' => 'and',
     'LBL_TIME_AGO' => 'ago',
-
+// Activity stream
     'CREATED_CONTACT' => 'created a <b>NEW</b> {0}',
     'CREATED_OPPORTUNITY' => 'created a <b>NEW</b> {0}',
     'CREATED_CASE' => 'created a <b>NEW</b> {0}',
     'CREATED_LEAD' => 'created a <b>NEW</b> {0}',
-    'FOR' => 'for',
+    'FOR' => 'for', // Activity stream for cases
+    'FOR_AMOUNT' => 'for amount', // Activity stream for cases
     'CLOSED_CASE' => '<b>CLOSED</b> a {0} ',
     'CONVERTED_LEAD' => '<b>CONVERTED</b> a {0}',
     'WON_OPPORTUNITY' => 'has <b>WON</b> an {0}',
     'WITH' => 'with',
+
+    'LBL_LINK_TYPE_Link' => 'Link',
+    'LBL_LINK_TYPE_Image' => 'Image',
+    'LBL_LINK_TYPE_YouTube' => 'YouTube&#153;',
 
     'LBL_SELECT' => 'Select',
     'LBL_POST' => 'Post',
@@ -116,4 +122,3 @@ $mod_strings = array(
     'LBL_POST_TITLE' => 'Post Status Update for ',
     'LBL_URL_LINK_TITLE' => 'URL Link to use',
 );
-?>

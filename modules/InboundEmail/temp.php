@@ -2,6 +2,8 @@
 /**
  * Stub for certain interactions;
  */
-class temp {
+#[\AllowDynamicProperties]
+class temp
+{
     public $name;
 }

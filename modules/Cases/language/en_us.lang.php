@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2019 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -45,10 +45,10 @@ if (!defined('sugarEntry') || !sugarEntry) {
 $mod_strings = array(
     'ERR_DELETE_RECORD' => 'You must specify a record number to delete the account.',
     'LBL_TOOL_TIP_BOX_TITLE' => 'KnowledgeBase Suggestions',
-    'LBL_TOOL_TIP_TITLE' => 'Title: ',
-    'LBL_TOOL_TIP_BODY' => 'Body: ',
-    'LBL_TOOL_TIP_INFO' => 'Additional Info: ',
-    'LBL_TOOL_TIP_USE' => 'Use as: ',
+    'LBL_TOOL_TIP_TITLE' => 'Title:',
+    'LBL_TOOL_TIP_BODY' => 'Body:',
+    'LBL_TOOL_TIP_INFO' => 'Additional Info:',
+    'LBL_TOOL_TIP_USE' => 'Use as:',
     'LBL_SUGGESTION_BOX' => 'Suggestions',
     'LBL_NO_SUGGESTIONS' => 'No Suggestions',
     'LBL_RESOLUTION_BUTTON' => 'Resolution',
@@ -105,16 +105,16 @@ $mod_strings = array(
     'LBL_CREATED_USER' => 'Created User',
     'LBL_MODIFIED_USER' => 'Modified User',
     'LBL_PROJECT_SUBPANEL_TITLE' => 'Projects',
-    'LBL_CASE_INFORMATION' => 'OVERVIEW',
+    'LBL_CASE_INFORMATION' => 'OVERVIEW', //No need to be translated in all caps. Translation used just in menu action items when using the SuiteP template
 
     // SNIP
-    'LBL_UPDATE_TEXT' => 'Update Text',
+    'LBL_UPDATE_TEXT' => 'Updates - Text', //Field for Case updates with text only
     'LBL_INTERNAL' => 'Internal Update',
     'LBL_AOP_CASE_UPDATES' => 'Case Updates',
     'LBL_AOP_CASE_UPDATES_THREADED' => 'Case Updates Threaded',
     'LBL_CASE_UPDATES_COLLAPSE_ALL' => 'Collapse All',
     'LBL_CASE_UPDATES_EXPAND_ALL' => 'Expand All',
-    'LBL_AOP_CASE_ATTACHMENTS' => 'Attachments: ',
+    'LBL_AOP_CASE_ATTACHMENTS' => 'Attachments:',
 
     'LBL_AOP_CASE_EVENTS' => 'Case Events',
     'LBL_CASE_ATTACHMENTS_DISPLAY' => 'Case Attachments:',
@@ -126,7 +126,6 @@ $mod_strings = array(
     'LBL_SELECT_EXTERNAL_CASE_DOCUMENT' => 'External file',
     'LBL_CONTACT_CREATED_BY_NAME' => 'Created by contact',
     'LBL_CONTACT_CREATED_BY' => 'Created by',
-    'LBL_CASE_UPDATE_FORM' => 'Update attachment form',
+    'LBL_CASE_UPDATE_FORM' => 'Updates - Attachment form', //Form for attachments on case updates
+    'LBL_UNKNOWN_CONTACT' => 'Unknown Contact',
 );
-
-?>

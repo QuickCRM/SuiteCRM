@@ -4,7 +4,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -97,6 +97,9 @@
         composeBox.on('hide.bs.modal', function () {
           composeBox.remove();
         });
+        $( "#emails_email_templates_name" ).change(function() {
+          $.fn.EmailsComposeView.onTemplateChange()
+        });
       }).fail(function (data) {
         composeBox.controls.modal.content.html(SUGAR.language.translate('', 'LBL_EMAIL_ERROR_GENERAL_TITLE'));
       });
@@ -116,6 +119,9 @@
   $.fn.openComposeViewModal = function (source) {
     "use strict";
 
+    window.event.preventDefault();
+    window.event.stopImmediatePropagation();
+
     var self = this;
     self.emailComposeView = null;
     var opts = $.extend({}, $.fn.EmailsComposeViewModal.defaults);
@@ -123,10 +129,30 @@
     composeBox.messageBox({"showHeader": false, "showFooter": false, "size": 'lg'});
     composeBox.setBody('<div class="email-in-progress"><img src="themes/' + SUGAR.themes.theme_name + '/images/loading.gif"></div>');
     composeBox.show();
+    var relatedId = $('[name="record"]').val();
+    var ids = '&ids=';
+    if ($(source).attr('data-record-id') !== '') {
+      ids = ids + $(source).attr('data-record-id');
+      relatedId = $(source).attr('data-record-id');
+    }
+    else{
+      var inputs = document.MassUpdate.elements;
+      for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].name === 'mass[]' && inputs[i].checked) {
+          ids = ids + inputs[i].value + ',';
+        }
+      }
+    }
+
+    var targetModule = currentModule;
+    if ($(source).attr('data-module') !== '') {
+      targetModule = $(source).attr('data-module');
+    }
+    var url = 'index.php?module=Emails&action=ComposeView&in_popup=1&targetModule=' + targetModule + ids + '&relatedModule=' + currentModule + '&relatedId=' + relatedId;
     $.ajax({
       type: "GET",
       cache: false,
-      url: 'index.php?module=Emails&action=ComposeView&in_popup=1'
+      url: url
     }).done(function (data) {
       if (data.length === 0) {
         console.error("Unable to display ComposeView");
@@ -137,22 +163,53 @@
       self.emailComposeView = composeBox.controls.modal.body.find('.compose-view').EmailsComposeView();
 
       // Populate fields
-      if ($(source).attr('data-record-id') !== '') {
-        var populateModule = $(source).attr('data-module');
-        var populateModuleRecord = $(source).attr('data-record-id');
-        var populateModuleName = $(source).attr('data-module-name');
-        var populateEmailAddress = $(source).attr('data-email-address');
+      var targetCount = 0;
+      var targetList = '';
+      var populateModuleName = '';
+      var populateEmailAddress = '';
+      var populateModule = '';
+      var populateModuleRecord = '';
+      var dataEmailName = $(source).attr('data-module-name');
+      var dataEmailAddress = $(source).attr('data-email-address');
 
-        if (populateModuleName !== '') {
-          populateEmailAddress = populateModuleName + ' <' + populateEmailAddress + '>';
+      $('.email-compose-view-to-list').each(function () {
+        if ( $('.email-relate-target'.length) ){
+          populateModule = $('.email-relate-target').attr('data-relate-module');
+          populateModuleRecord = $('.email-relate-target').attr('data-relate-id');
+          populateModuleName = $('.email-relate-target').attr('data-relate-name');
         }
-
-        $(self.emailComposeView).find('#to_addrs_names').val(populateEmailAddress);
+        else {
+          populateModuleName = $(this).attr('data-record-name');
+          if (dataEmailName !== '') {
+            populateModuleName = dataEmailName;
+          }
+          populateModule = $(this).attr('data-record-module');
+          populateModuleRecord = $(this).attr('data-record-id');
+          if (populateModuleName === '') {
+            populateModuleName = populateEmailAddress;
+          }
+        }
+        populateEmailAddress = $(this).attr('data-record-email');
+        if (dataEmailAddress !== '') {
+          populateEmailAddress = dataEmailAddress;
+        }
+        if (populateEmailAddress !== '') {
+          if (targetCount > 0) {
+            targetList = targetList + ',';
+          }
+          targetList = targetList + dataEmailName + ' <' + populateEmailAddress + '>';
+          targetCount++;
+        }
+      });
+      if (targetCount > 0) {
+        $(self.emailComposeView).find('#to_addrs_names').val(targetList);
+      }
+      if (targetCount < 2) {
         $(self.emailComposeView).find('#parent_type').val(populateModule);
         $(self.emailComposeView).find('#parent_name').val(populateModuleName);
         $(self.emailComposeView).find('#parent_id').val(populateModuleRecord);
-
       }
+
       $(self.emailComposeView).on('sentEmail', function (event, composeView) {
         composeBox.hide();
         composeBox.remove();
@@ -183,8 +240,23 @@
       composeBox.on('cancel', function () {
         composeBox.remove();
       });
-      composeBox.on('hide.bs.modal', function () {
-        composeBox.remove();
+      composeBox.on('hide.bs.modal', function (e) {
+        e.preventDefault();
+        var mb = messageBox({size: 'lg'});
+        mb.setTitle(SUGAR.language.translate('', 'LBL_CONFIRM_DISREGARD_EMAIL_TITLE'));
+        mb.setBody(SUGAR.language.translate('', 'LBL_CONFIRM_DISREGARD_EMAIL_BODY'));
+        mb.on('ok', function () {
+          mb.remove();
+          composeBox.hide();
+          composeBox.remove();
+        });
+        mb.on('cancel', function () {
+          mb.remove();
+        });
+        mb.show();
+      });
+      $( "#emails_email_templates_name" ).change(function() {
+        $.fn.EmailsComposeView.onTemplateChange()
       });
     }).fail(function (data) {
       composeBox.controls.modal.content.html(SUGAR.language.translate('', 'LBL_EMAIL_ERROR_GENERAL_TITLE'));
@@ -198,3 +270,4 @@
     'contentSelector': '#content'
   };
 }(jQuery));
+

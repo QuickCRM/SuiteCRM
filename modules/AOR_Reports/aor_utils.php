@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -67,8 +67,10 @@ function getDisplayForField($modulePath, $field, $reportModule)
             continue;
         }
         if (!empty($currentBean->field_name_map[$relName]['vname'])) {
-            $moduleLabel = trim(translate($currentBean->field_name_map[$relName]['vname'], $currentBean->module_dir),
-                ':');
+            $moduleLabel = trim(
+                translate($currentBean->field_name_map[$relName]['vname'], $currentBean->module_dir),
+                ':'
+            );
         }
         $thisModule = getRelatedModule($currentBean->module_dir, $relName);
         $currentBean = BeanFactory::getBean($thisModule);
@@ -79,41 +81,52 @@ function getDisplayForField($modulePath, $field, $reportModule)
             $modulePathDisplay[] = $currentBean->module_name;
         }
     }
+    $fieldType = $currentBean->field_name_map[$field]['type'];
     $fieldDisplay = $currentBean->field_name_map[$field]['vname'];
     $fieldDisplay = translate($fieldDisplay, $currentBean->module_dir);
     $fieldDisplay = trim($fieldDisplay, ':');
     foreach ($modulePathDisplay as &$module) {
         $module = isset($app_list_strings['aor_moduleList'][$module]) ? $app_list_strings['aor_moduleList'][$module] : (
-        isset($app_list_strings['moduleList'][$module]) ? $app_list_strings['moduleList'][$module] : $module
+            isset($app_list_strings['moduleList'][$module]) ? $app_list_strings['moduleList'][$module] : $module
         );
     }
-
-    return array('field' => $fieldDisplay, 'module' => str_replace(' ', '&nbsp;', implode(' : ', $modulePathDisplay)));
+    return array('field' => $fieldDisplay, 'type'=>$fieldType, 'module' => str_replace(' ', '&nbsp;', implode(' : ', $modulePathDisplay)));
 }
 
-function requestToUserParameters()
+function requestToUserParameters($reportBean = null)
 {
+    global $app_list_strings;
     $params = array();
-    if (isset($_REQUEST['parameter_id']) && $_REQUEST['parameter_id']) {
+    if (!empty($_REQUEST['parameter_id'])) {
+        $dateCount = 0;
         foreach ($_REQUEST['parameter_id'] as $key => $parameterId) {
             if ($_REQUEST['parameter_type'][$key] === 'Multi') {
-                $_REQUEST['parameter_value'][$key] = encodeMultienumValue(explode(',',
-                    $_REQUEST['parameter_value'][$key]));
+                $_REQUEST['parameter_value'][$key] = encodeMultienumValue(explode(
+                    ',',
+                    $_REQUEST['parameter_value'][$key]
+                ));
             }
+
+            $condition = BeanFactory::getBean('AOR_Conditions', $_REQUEST['parameter_id'][$key]);
+            $value = $_REQUEST['parameter_value'][$key];
+            if ($reportBean && $condition && !array_key_exists($value, $app_list_strings['date_time_period_list'])) {
+                $value = fixUpFormatting($reportBean->report_module, $condition->field, $value);
+            }
+
             $params[$parameterId] = array(
                 'id' => $parameterId,
                 'operator' => $_REQUEST['parameter_operator'][$key],
                 'type' => $_REQUEST['parameter_type'][$key],
-                'value' => $_REQUEST['parameter_value'][$key],
+                'value' => $value,
             );
 
             // Fix for issue #1272 - AOR_Report module cannot update Date type parameter.
             if ($_REQUEST['parameter_type'][$key] === 'Date') {
                 $values = array();
-                $values[] = $_REQUEST['parameter_value'][0];
-                $values[] = $_REQUEST['parameter_value'][1];;
-                $values[] = $_REQUEST['parameter_value'][2];;
-                $values[] = $_REQUEST['parameter_value'][3];;
+                $values[] = $_REQUEST['parameter_date_value'][$key];
+                $values[] = $_REQUEST['parameter_date_sign'][$key];
+                $values[] = $_REQUEST['parameter_date_number'][$key];
+                $values[] = $_REQUEST['parameter_date_time'][$key];
 
                 $params[$parameterId] = array(
                     'id' => $parameterId,
@@ -121,33 +134,34 @@ function requestToUserParameters()
                     'type' => $_REQUEST['parameter_type'][$key],
                     'value' => $values,
                 );
+                $dateCount++;
             }
 
             // determine if parameter is a date
             if ($_REQUEST['parameter_type'][$key] === 'Value') {
-                $paramLength = strlen($_REQUEST['parameter_value'][$key]);
+                $paramLength = strlen((string) $_REQUEST['parameter_value'][$key]);
                 $paramValue = $_REQUEST['parameter_value'][$key];
                 if ($paramLength === 10) {
-                    if (strpos($paramValue, '/') === 2 || strpos($paramValue, '/') === 4) {
+                    if (strpos((string) $paramValue, '/') === 2 || strpos((string) $paramValue, '/') === 4) {
                         $params[$parameterId] = array(
                             'id' => $parameterId,
                             'operator' => $_REQUEST['parameter_operator'][$key],
                             'type' => $_REQUEST['parameter_type'][$key],
-                            'value' => convertToDateTime($_REQUEST['parameter_value'][$key])->format('Y-m-d H:i:s'),
+                            'value' => $value,
                         );
-                    } elseif (strpos($paramValue, '-') === 2 || strpos($paramValue, '-') === 4) {
+                    } elseif (strpos((string) $paramValue, '-') === 2 || strpos((string) $paramValue, '-') === 4) {
                         $params[$parameterId] = array(
                             'id' => $parameterId,
                             'operator' => $_REQUEST['parameter_operator'][$key],
                             'type' => $_REQUEST['parameter_type'][$key],
-                            'value' => convertToDateTime($_REQUEST['parameter_value'][$key])->format('Y-m-d H:i:s'),
+                            'value' => $value,
                         );
-                    } elseif (strpos($paramValue, '.') === 2 || strpos($paramValue, '.') === 4) {
+                    } elseif (strpos((string) $paramValue, '.') === 2 || strpos((string) $paramValue, '.') === 4) {
                         $params[$parameterId] = array(
                             'id' => $parameterId,
                             'operator' => $_REQUEST['parameter_operator'][$key],
                             'type' => $_REQUEST['parameter_type'][$key],
-                            'value' => convertToDateTime($_REQUEST['parameter_value'][$key])->format('Y-m-d H:i:s'),
+                            'value' => $value,
                         );
                     }
                 }
@@ -192,6 +206,7 @@ function getConditionsAsParameters($report, $override = array())
         $disp = getDisplayForField($path, $condition->field, $report->report_module);
         $conditions[] = array(
             'id' => $condition->id,
+            'key' => $key,
             'operator' => $condition->operator,
             'operator_display' => $app_list_strings['aor_operator_list'][$condition->operator],
             'value_type' => $condition->value_type,
@@ -211,13 +226,13 @@ function getConditionsAsParameters($report, $override = array())
  * @param $date_time_period_list_selected
  * @return DateTime
  */
-function getPeriodDate($date_time_period_list_selected)
+function getPeriodDate($date_time_period_list_selected, $type = '')
 {
-    global $sugar_config;
+    global $sugar_config, $timedate;
     $datetime_period = new DateTime();
 
     // Setup when year quarters start & end
-    if ($sugar_config['aor']['quarters_begin']) {
+    if (isset($sugar_config['aor']['quarters_begin'])) {
         $q = calculateQuarters($sugar_config['aor']['quarters_begin']);
     } else {
         $q = calculateQuarters();
@@ -226,61 +241,92 @@ function getPeriodDate($date_time_period_list_selected)
     if ($date_time_period_list_selected == 'today') {
         $datetime_period = new DateTime();
     } elseif ($date_time_period_list_selected == 'yesterday') {
-            $datetime_period = $datetime_period->sub(new DateInterval("P1D"));
-        } elseif ($date_time_period_list_selected == 'this_week') {
-                $datetime_period = $datetime_period->setTimestamp(strtotime('this week'));
-            } elseif ($date_time_period_list_selected == 'last_week') {
-                    $datetime_period = $datetime_period->setTimestamp(strtotime('last week'));
-                } elseif ($date_time_period_list_selected == 'this_month') {
-                        $datetime_period = $datetime_period->setDate($datetime_period->format('Y'),
-                            $datetime_period->format('m'), 1);
-                    } elseif ($date_time_period_list_selected == 'last_month') {
-                            $datetime_period = $datetime_period->modify('first day of last month');
-                        } elseif ($date_time_period_list_selected == 'this_quarter') {
-                                $thisMonth = $datetime_period->setDate($datetime_period->format('Y'),
-                                    $datetime_period->format('m'), 1);
-                                if ($thisMonth >= $q[1]['start'] && $thisMonth <= $q[1]['end']) {
-                                    // quarter 1
-                                    $datetime_period = $datetime_period->setDate($q[1]['start']->format('Y'),
-                                        $q[1]['start']->format('m'), $q[1]['start']->format('d'));
-                                } elseif ($thisMonth >= $q[2]['start'] && $thisMonth <= $q[2]['end']) {
-                                        // quarter 2
-                                        $datetime_period = $datetime_period->setDate($q[2]['start']->format('Y'),
-                                            $q[2]['start']->format('m'), $q[2]['start']->format('d'));
-                                    } elseif ($thisMonth >= $q[3]['start'] && $thisMonth <= $q[3]['end']) {
-                                            // quarter 3
-                                            $datetime_period = $datetime_period->setDate($q[3]['start']->format('Y'),
-                                                $q[3]['start']->format('m'), $q[3]['start']->format('d'));
-                                        } elseif ($thisMonth >= $q[4]['start'] && $thisMonth <= $q[4]['end']) {
-                                                // quarter 4
-                                                $datetime_period = $datetime_period->setDate($q[4]['start']->format('Y'),
-                                                    $q[4]['start']->format('m'), $q[4]['start']->format('d'));
-                                            }
-                            } elseif ($date_time_period_list_selected == 'last_quarter') {
-                                    $thisMonth = $datetime_period->setDate($datetime_period->format('Y'),
-                                        $datetime_period->format('m'), 1);
-                                    if ($thisMonth >= $q[1]['start'] && $thisMonth <= $q[1]['end']) {
-                                        // quarter 1 - 3 months
-                                        $datetime_period = $q[1]['start']->sub(new DateInterval('P3M'));
-                                    } elseif ($thisMonth >= $q[2]['start'] && $thisMonth <= $q[2]['end']) {
-                                            // quarter 2 - 3 months
-                                            $datetime_period = $q[2]['start']->sub(new DateInterval('P3M'));
-                                        } elseif ($thisMonth >= $q[3]['start'] && $thisMonth <= $q[3]['end']) {
-                                                // quarter 3 - 3 months
-                                                $datetime_period = $q[3]['start']->sub(new DateInterval('P3M'));
-                                            } elseif ($thisMonth >= $q[4]['start'] && $thisMonth <= $q[4]['end']) {
-                                                    // quarter 4 - 3 months
-                                                    $datetime_period = $q[3]['start']->sub(new DateInterval('P3M'));
-                                                }
-                                } elseif ($date_time_period_list_selected == 'this_year') {
-                                        $datetime_period = $datetime_period = $datetime_period->setDate($datetime_period->format('Y'),
-                                            1, 1);
-                                    } elseif ($date_time_period_list_selected == 'last_year') {
-                                            $datetime_period = $datetime_period = $datetime_period->setDate($datetime_period->format('Y') - 1,
-                                                1, 1);
-                                        }
+        $datetime_period = $datetime_period->sub(new DateInterval("P1D"));
+    } elseif ($date_time_period_list_selected == 'this_week') {
+        $datetime_period = $datetime_period->setTimestamp(strtotime('this week'));
+    } elseif ($date_time_period_list_selected == 'last_week') {
+        $datetime_period = $datetime_period->setTimestamp(strtotime('last week'));
+    } elseif ($date_time_period_list_selected == 'this_month') {
+        $datetime_period = $datetime_period->setDate(
+            $datetime_period->format('Y'),
+            $datetime_period->format('m'),
+            1
+        );
+    } elseif ($date_time_period_list_selected == 'last_month') {
+        $datetime_period = $datetime_period->modify('first day of last month');
+    } elseif ($date_time_period_list_selected == 'this_quarter') {
+        $thisMonth = $datetime_period->setDate(
+            $datetime_period->format('Y'),
+            $datetime_period->format('m'),
+            1
+        );
+        if ($thisMonth >= $q[1]['start'] && $thisMonth <= $q[1]['end']) {
+            // quarter 1
+            $datetime_period = $datetime_period->setDate(
+                $q[1]['start']->format('Y'),
+                $q[1]['start']->format('m'),
+                $q[1]['start']->format('d')
+            );
+        } elseif ($thisMonth >= $q[2]['start'] && $thisMonth <= $q[2]['end']) {
+            // quarter 2
+            $datetime_period = $datetime_period->setDate(
+                $q[2]['start']->format('Y'),
+                $q[2]['start']->format('m'),
+                $q[2]['start']->format('d')
+            );
+        } elseif ($thisMonth >= $q[3]['start'] && $thisMonth <= $q[3]['end']) {
+            // quarter 3
+            $datetime_period = $datetime_period->setDate(
+                $q[3]['start']->format('Y'),
+                $q[3]['start']->format('m'),
+                $q[3]['start']->format('d')
+            );
+        } elseif ($thisMonth >= $q[4]['start'] && $thisMonth <= $q[4]['end']) {
+            // quarter 4
+            $datetime_period = $datetime_period->setDate(
+                $q[4]['start']->format('Y'),
+                $q[4]['start']->format('m'),
+                $q[4]['start']->format('d')
+            );
+        }
+    } elseif ($date_time_period_list_selected == 'last_quarter') {
+        $thisMonth = $datetime_period->setDate(
+            $datetime_period->format('Y'),
+            $datetime_period->format('m'),
+            1
+        );
+        if ($thisMonth >= $q[1]['start'] && $thisMonth <= $q[1]['end']) {
+            // quarter 1 - 3 months
+            $datetime_period = $q[1]['start']->sub(new DateInterval('P3M'));
+        } elseif ($thisMonth >= $q[2]['start'] && $thisMonth <= $q[2]['end']) {
+            // quarter 2 - 3 months
+            $datetime_period = $q[2]['start']->sub(new DateInterval('P3M'));
+        } elseif ($thisMonth >= $q[3]['start'] && $thisMonth <= $q[3]['end']) {
+            // quarter 3 - 3 months
+            $datetime_period = $q[3]['start']->sub(new DateInterval('P3M'));
+        } elseif ($thisMonth >= $q[4]['start'] && $thisMonth <= $q[4]['end']) {
+            // quarter 4 - 3 months
+            $datetime_period = $q[3]['start']->sub(new DateInterval('P3M'));
+        }
+    } elseif ($date_time_period_list_selected == 'this_year') {
+        $datetime_period = $datetime_period = $datetime_period->setDate(
+            $datetime_period->format('Y'),
+            1,
+            1
+        );
+    } elseif ($date_time_period_list_selected == 'last_year') {
+        $datetime_period = $datetime_period = $datetime_period->setDate(
+            $datetime_period->format('Y') - 1,
+            1,
+            1
+        );
+    }
     // set time to 00:00:00
     $datetime_period = $datetime_period->setTime(0, 0, 0);
+
+    if($type === 'datetime') {
+        $datetime_period->sub(DateInterval::createFromDateString($timedate->getUserUTCOffset() . ' minutes'));
+    }
 
     return $datetime_period;
 }
@@ -290,48 +336,73 @@ function getPeriodDate($date_time_period_list_selected)
  * @param $date_time_period_list_selected
  * @return DateTime
  */
-function getPeriodEndDate($dateTimePeriodListSelected)
+function getPeriodEndDate($dateTimePeriodListSelected, $type = '')
 {
+    global $timedate;
+
+    $datetimePeriod = null;
+
     switch ($dateTimePeriodListSelected) {
         case 'today':
-        case 'yesterday':
             $datetimePeriod = new DateTime();
             break;
+        case 'yesterday':
+            $datetimePeriod = new DateTime("yesterday");
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
+            break;
         case 'this_week':
-            $datetimePeriod = new DateTime("next week monday");
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime("this week sunday");
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
         case 'last_week':
-            $datetimePeriod = new DateTime("this week monday");
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime("last week sunday");
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
         case 'this_month':
-            $datetimePeriod = new DateTime('first day of next month');
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime('last day of this month');
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
         case 'last_month':
-            $datetimePeriod = new DateTime("first day of this month");
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime("last day of last month");
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
         case 'this_quarter':
             $thisMonth = new DateTime('first day of this month');
             $thisMonth = $thisMonth->format('n');
             if ($thisMonth < 4) {
                 // quarter 1
-                $datetimePeriod = new DateTime('first day of april');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of march');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 3 && $thisMonth < 7) {
                 // quarter 2
-                $datetimePeriod = new DateTime('first day of july');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of june');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 6 && $thisMonth < 10) {
                 // quarter 3
-                $datetimePeriod = new DateTime('first day of october');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of september');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 9) {
                 // quarter 4
-                $datetimePeriod = new DateTime('next year first day of january');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('this year last day of december');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             }
             break;
         case 'last_quarter':
@@ -339,30 +410,46 @@ function getPeriodEndDate($dateTimePeriodListSelected)
             $thisMonth = $thisMonth->format('n');
             if ($thisMonth < 4) {
                 // previous quarter 1
-                $datetimePeriod = new DateTime('this year first day of january');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('this year last day of december');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 3 && $thisMonth < 7) {
                 // previous quarter 2
-                $datetimePeriod = new DateTime('first day of april');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of march');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 6 && $thisMonth < 10) {
                 // previous quarter 3
-                $datetimePeriod = new DateTime('first day of july');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of june');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             } elseif ($thisMonth > 9) {
                 // previous quarter 4
-                $datetimePeriod = new DateTime('first day of october');
-                $datetimePeriod->setTime(0, 0, 0);
+                $datetimePeriod = new DateTime('last day of september');
+                if($type === 'datetime') {
+                    $datetimePeriod->setTime(23, 59, 59);
+                }
             }
             break;
         case 'this_year':
-            $datetimePeriod = new DateTime('next year first day of january');
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime('this year last day of december');
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
         case 'last_year':
-            $datetimePeriod = new DateTime("this year first day of january");
-            $datetimePeriod->setTime(0, 0, 0);
+            $datetimePeriod = new DateTime("last year last day of december");
+            if($type === 'datetime') {
+                $datetimePeriod->setTime(23, 59, 59);
+            }
             break;
+    }
+
+    if($type === 'datetime') {
+        $datetimePeriod->sub(DateInterval::createFromDateString($timedate->getUserUTCOffset() . ' minutes'));
     }
 
     return $datetimePeriod;
@@ -432,9 +519,17 @@ function calculateQuarters($offsetMonths = 0)
  */
 function convertToDateTime($value)
 {
-    global $current_user;
+
+    global $current_user, $timedate;
 
     $user_dateformat = $current_user->getPreference('datef');
+
+    // In some cases the date string already is in database format
+    if ($timedate->check_matching_format($value, $timedate->get_db_date_format())) {
+        $user_dateformat = $timedate->get_db_date_format();
+    }
+
+    $formattedValue = null;
 
     switch ($user_dateformat) {
         case 'Y-m-d':
@@ -511,8 +606,11 @@ function convertToDateTime($value)
     $formattedValue .= ' 00:00:00';
     $userTimezone = $current_user->getPreference('timezone');
     $utz = new DateTimeZone($userTimezone);
-    $dateTime = DateTime::createFromFormat('Y-m-d H:i:s',
-        $formattedValue, $utz);
+    $dateTime = DateTime::createFromFormat(
+        'Y-m-d H:i:s',
+        $formattedValue,
+        $utz
+    );
     $dateTime->setTimezone(new DateTimeZone('UTC'));
 
     return $dateTime;

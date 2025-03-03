@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -34,23 +34,29 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 
 if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
-require_once('include/externalAPI/ExternalAPIFactory.php');
-require_once 'include/UploadStream.php';
+require_once __DIR__ . '/externalAPI/ExternalAPIFactory.php';
+require_once __DIR__ . '/UploadStream.php';
+
+use SuiteCRM\Exception\MalwareFoundException;
+use SuiteCRM\Utility\AntiMalware\AntiMalwareTrait;
 
 /**
  * @api
  * Manage uploaded files
  */
+#[\AllowDynamicProperties]
 class UploadFile
 {
+    use AntiMalwareTrait;
+
     public $field_name;
     public $stored_file_name;
     public $uploaded_file_name;
@@ -103,10 +109,10 @@ class UploadFile
 
     /**
      * Get URL for a document
-     * @deprecated
      * @param string stored_file_name File name in filesystem
      * @param string bean_id note bean ID
      * @return string path with file name
+     * @deprecated
      */
     public static function get_url($stored_file_name, $bean_id)
     {
@@ -183,6 +189,7 @@ class UploadFile
      * @param string old_id ID of original note
      * @param string new_id ID of new (copied) note
      * @param string filename Filename of file (deprecated)
+     * @return boolean TRUE = success, FALSE = failed
      */
     public static function duplicate_file($old_id, $new_id, $file_name)
     {
@@ -208,9 +215,18 @@ class UploadFile
         }
 
         $destination = "upload://$new_id";
-        if (!copy($source, $destination)) {
-            $GLOBALS['log']->error("upload_file could not copy [ {$source} ] to [ {$destination} ]");
+
+        if (is_dir($source)) {
+            LoggerManager::getLogger()->warn('Upload File error: Argument cannot be a directory. Argument was: "' . $source . '"');
+        } else {
+            if (!copy($source, $destination)) {
+                $GLOBALS['log']->error("upload_file could not copy [ {$source} ] to [ {$destination} ]");
+            } else {
+                return true;
+            }
         }
+
+        return false;
     }
 
     /**
@@ -286,10 +302,24 @@ class UploadFile
             return false;
         }
 
+        try {
+            $this->scanPathForMalware($_FILES[$this->field_name]['tmp_name']);
+        } catch (MalwareFoundException $exception) {
+            LoggerManager::getLogger()->security("Malware found, unable to save file: {$_FILES[$this->field_name]['name']}");
+
+            return false;
+        }
+
+
         $this->mime_type = $this->getMime($_FILES[$this->field_name]);
         $this->stored_file_name = $this->create_stored_filename();
         $this->temp_file_location = $_FILES[$this->field_name]['tmp_name'];
         $this->uploaded_file_name = $_FILES[$this->field_name]['name'];
+
+        if (has_valid_image_mime_type($this->mime_type) && !verify_uploaded_image($this->temp_file_location)) {
+            LoggerManager::getLogger()->security("Image Malware found, unable to save file: {$_FILES[$this->field_name]['name']}");
+            return false;
+        }
 
         return true;
     }
@@ -301,7 +331,6 @@ class UploadFile
      */
     public function getMimeSoap($filename)
     {
-
         if (function_exists('ext2mime')) {
             $mime = ext2mime($filename);
         } else {
@@ -309,7 +338,6 @@ class UploadFile
         }
 
         return $mime;
-
     }
 
     /**
@@ -321,9 +349,9 @@ class UploadFile
     {
         $filename = $_FILES_element['name'];
         $filetype = isset($_FILES_element['type']) ? $_FILES_element['type'] : null;
-        $file_ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $file_ext = pathinfo((string) $filename, PATHINFO_EXTENSION);
 
-        $is_image = strpos($filetype, 'image/') === 0;
+        $is_image = strpos((string) $filetype, 'image/') === 0;
         // if it's an image, or no file extension is available and the mime is octet-stream
         // try to determine the mime type
         $recheckMime = $is_image || (empty($file_ext) && $filetype == 'application/octet-stream');
@@ -407,20 +435,20 @@ class UploadFile
             if (is_windows()) {
                 // create a non UTF-8 name encoding
                 // 176 + 36 char guid = windows' maximum filename length
-                $end = (strlen($stored_file_name) > 176) ? 176 : strlen($stored_file_name);
-                $stored_file_name = substr($stored_file_name, 0, $end);
+                $end = (strlen((string) $stored_file_name) > 176) ? 176 : strlen((string) $stored_file_name);
+                $stored_file_name = substr((string) $stored_file_name, 0, $end);
                 $this->original_file_name = $_FILES[$this->field_name]['name'];
             }
-            $stored_file_name = str_replace("\\", "", $stored_file_name);
+            $stored_file_name = str_replace("\\", "", (string) $stored_file_name);
         } else {
             $stored_file_name = $this->stored_file_name;
             $this->original_file_name = $stored_file_name;
         }
 
-        $this->file_ext = pathinfo($stored_file_name, PATHINFO_EXTENSION);
+        $this->file_ext = pathinfo((string) $stored_file_name, PATHINFO_EXTENSION);
         // cn: bug 6347 - fix file extension detection
         foreach ($sugar_config['upload_badext'] as $badExt) {
-            if (strtolower($this->file_ext) == strtolower($badExt)) {
+            if (strtolower($this->file_ext) === strtolower($badExt)) {
                 $stored_file_name .= ".txt";
                 $this->file_ext = "txt";
                 break; // no need to look for more
@@ -432,28 +460,30 @@ class UploadFile
 
     /**
      * moves uploaded temp file to permanent save location
-     * @param string bean_id ID of parent bean
+     * @param string $bean_id ID of parent bean
      * @return bool True on success
      */
     public function final_move($bean_id)
     {
+        global $log;
+
         $destination = $bean_id;
-        if (substr($destination, 0, 9) != "upload://") {
-            $destination = "upload://$bean_id";
+        if (substr($destination, 0, 9) != 'upload://') {
+            $destination = 'upload://' . $bean_id;
         }
+
         if ($this->use_soap) {
             if (!file_put_contents($destination, $this->file)) {
-                $GLOBALS['log']->fatal("ERROR: can't save file to $destination");
-
+                $log->fatal('Unable to save file to ' . $destination);
                 return false;
             }
-        } else {
-            if (!UploadStream::move_uploaded_file($_FILES[$this->field_name]['tmp_name'], $destination)) {
-                $GLOBALS['log']->fatal("ERROR: can't move_uploaded_file to $destination.".
-                    " You should try making the directory writable by the webserver");
+        } elseif (!UploadStream::move_uploaded_file($_FILES[$this->field_name]['tmp_name'], $destination)) {
+            $log->fatal(
+                'Unable to move move_uploaded_file to ' . $destination .
+                ' You should try making the directory writable by the webserver'
+            );
 
-                return false;
-            }
+            return false;
         }
 
         return true;
@@ -469,6 +499,7 @@ class UploadFile
      */
     public function upload_doc($bean, $bean_id, $doc_type, $file_name, $mime_type)
     {
+        $result = [];
         if (!empty($doc_type) && $doc_type != 'Sugar') {
             global $sugar_config;
             $destination = $this->get_upload_path($bean_id);
@@ -507,12 +538,10 @@ class UploadFile
                 $error_message = isset($result['errorMessage']) ? $result['errorMessage'] :
                     $GLOBALS['app_strings']['ERR_EXTERNAL_API_SAVE_FAIL'];
                 $_SESSION['user_error_message'][] = $error_message;
-
             } else {
                 unlink($new_destination);
             }
         }
-
     }
 
     /**
@@ -525,8 +554,8 @@ class UploadFile
         $file_name = $bean_id;
 
         // cn: bug 8056 - mbcs filename in urlencoding > 212 chars in Windows fails
-        $end = (strlen($file_name) > 212) ? 212 : strlen($file_name);
-        $ret_file_name = substr($file_name, 0, $end);
+        $end = (strlen((string) $file_name) > 212) ? 212 : strlen((string) $file_name);
+        $ret_file_name = substr((string) $file_name, 0, $end);
 
         return "upload://$ret_file_name";
     }

@@ -1,11 +1,14 @@
 <?php
-if(!defined('sugarEntry'))define('sugarEntry', true);
-/*********************************************************************************
+if (!defined('sugarEntry')) {
+    define('sugarEntry', true);
+}
+/**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
-
- * SuiteCRM is an extension to SugarCRM Community Edition developed by Salesagility Ltd.
- * Copyright (C) 2011 - 2014 Salesagility Ltd.
+ *
+ * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -16,7 +19,7 @@ if(!defined('sugarEntry'))define('sugarEntry', true);
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -34,9 +37,9 @@ if(!defined('sugarEntry'))define('sugarEntry', true);
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
- ********************************************************************************/
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ */
 
 
 require_once('service/core/REST/SugarRest.php');
@@ -47,17 +50,20 @@ require_once('service/core/REST/SugarRest.php');
  */
 class SugarRestJSON extends SugarRest{
 
-	/**
+	public $faultObject;
+    public $implementation;
+    public $faultServer;
+    /**
 	 * It will json encode the input object and echo's it
 	 *
 	 * @param array $input - assoc array of input values: key = param name, value = param type
 	 * @return String - echos json encoded string of $input
 	 */
-	function generateResponse($input){
+	public function generateResponse($input){
 		$json = getJSONObj();
 		ob_clean();
 		header('Content-Type: application/json; charset=UTF-8');
-		if (isset($this->faultObject)) {
+		if (property_exists($this, 'faultObject') && $this->faultObject !== null) {
 			$this->generateFaultResponse($this->faultObject);
 		} else {
 			// JSONP support
@@ -76,7 +82,7 @@ class SugarRestJSON extends SugarRest{
 	 *
 	 * @return unknown
 	 */
-	function serve(){
+	public function serve(){
 		$GLOBALS['log']->info('Begin: SugarRestJSON->serve');
 		$json_data = !empty($_REQUEST['rest_data'])? $GLOBALS['RAW_REQUEST']['rest_data']: '';
 		if(empty($_REQUEST['method']) || !method_exists($this->implementation, $_REQUEST['method'])){
@@ -88,6 +94,9 @@ class SugarRestJSON extends SugarRest{
 			$json = getJSONObj();
 			$data = $json->decode($json_data);
 			if(!is_array($data))$data = array($data);
+            if (!isset($data['application_name']) && isset($data['application'])){
+                $data['application_name'] = $data['application'];
+            }
 			$res = call_user_func_array(array( $this->implementation, $method),$data);
 			$GLOBALS['log']->info('End: SugarRestJSON->serve');
 			return $res;
@@ -100,11 +109,11 @@ class SugarRestJSON extends SugarRest{
 	 * @param SoapError $errorObject - This is an object of type SoapError
 	 * @access public
 	 */
-	function fault($errorObject){
+	public function fault($errorObject){
 		$this->faultServer->faultObject = $errorObject;
 	} // fn
 
-	function generateFaultResponse($errorObject){
+	public function generateFaultResponse($errorObject){
 		$error = $errorObject->number . ': ' . $errorObject->name . '<br>' . $errorObject->description;
 		$GLOBALS['log']->error($error);
 		$json = getJSONObj();

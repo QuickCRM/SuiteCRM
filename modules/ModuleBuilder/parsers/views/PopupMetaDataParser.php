@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -50,13 +50,19 @@ require_once 'modules/ModuleBuilder/parsers/constants.php';
 class PopupMetaDataParser extends ListLayoutMetaDataParser
 {
 
-    // Columns is used by the view to construct the listview - each column is built by calling the named function
+    /**
+     * @var array $columns
+     *  Columns is used by the view to construct the listview - each column is built by calling the named function
+     */
     public $columns = array(
         'LBL_DEFAULT' => 'getDefaultFields',
         'LBL_AVAILABLE' => 'getAdditionalFields',
         'LBL_HIDDEN' => 'getAvailableFields'
     );
 
+    /**
+     * @var array $reserveProperties
+     */
     public static $reserveProperties = array(
         'moduleMain',
         'varName',
@@ -67,6 +73,9 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
         'addToReserve'
     );
 
+    /**
+     * @var array $defsMap
+     */
     public static $defsMap = array(MB_POPUPSEARCH => 'searchdefs', MB_POPUPLIST => 'listviewdefs');
 
     /**
@@ -74,6 +83,11 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
      */
     protected $search;
 
+
+    /**
+     * @var string $_view
+     */
+    protected $_view;
 
     /**
      * Constructor
@@ -178,22 +192,26 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
      */
     public function handleSave($populate = true)
     {
-        if (empty ($this->_packageName)) {
+        if (empty($this->_packageName)) {
             foreach (array(MB_CUSTOMMETADATALOCATION, MB_BASEMETADATALOCATION) as $value) {
-                $file = $this->implementation->getFileName(MB_POPUPLIST, $this->_moduleName, $value);
+                $file = $this->implementation->getFileName(MB_POPUPLIST, $this->_moduleName, null, $value);
                 if (file_exists($file)) {
                     break;
                 }
             }
-            $writeFile = $this->implementation->getFileName(MB_POPUPLIST, $this->_moduleName);
+            $writeFile = $this->implementation->getFileName(MB_POPUPLIST, $this->_moduleName, null);
             if (!file_exists($writeFile)) {
                 mkdir_recursive(dirname($writeFile));
             }
         } else {
-            $writeFile = $file = $this->implementation->getFileName(MB_POPUPLIST, $this->_moduleName,
-                $this->_packageName);
+            $writeFile = $file = $this->implementation->getFileName(
+                MB_POPUPLIST,
+                $this->_moduleName,
+                null,
+                $this->_packageName
+            );
         }
-        $this->implementation->_history->append($file);
+        $this->implementation->getHistory()->append($file);
         if ($populate) {
             $this->_populateFromRequest();
         }
@@ -248,8 +266,8 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
     public function addNewSearchDef($searchDefs, &$popupMeta)
     {
         if (!empty($searchDefs)) {
-            $this->__diffAndUpdate($searchDefs, $popupMeta['whereClauses'], true);
-            $this->__diffAndUpdate($searchDefs, $popupMeta['searchInputs']);
+            $this->_diffAndUpdate($searchDefs, $popupMeta['whereClauses'], true);
+            $this->_diffAndUpdate($searchDefs, $popupMeta['searchInputs']);
         }
     }
 
@@ -258,14 +276,14 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
      * @param array $targetDefs
      * @param bool $forWhere
      */
-    private function __diffAndUpdate($newDefs, &$targetDefs, $forWhere = false)
+    private function _diffAndUpdate($newDefs, &$targetDefs, $forWhere = false)
     {
         if (!is_array($targetDefs)) {
             $targetDefs = array();
         }
         foreach ($newDefs as $key => $def) {
             if (!isset($targetDefs[$key]) && $forWhere) {
-                $targetDefs[$key] = $this->__getTargetModuleName($def) . '.' . $key;
+                $targetDefs[$key] = $this->_getTargetModuleName($def) . '.' . $key;
             } else {
                 if (!in_array($key, $targetDefs) && !$forWhere) {
                     array_push($targetDefs, $key);
@@ -284,14 +302,13 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
                 }
             }
         }
-
     }
 
     /**
      * @param array $def
      * @return string
      */
-    private function __getTargetModuleName($def)
+    private function _getTargetModuleName($def)
     {
         $dir = strtolower($this->implementation->getModuleDir());
         if (isset($this->_fielddefs[$def['name']]) && isset($this->_fielddefs[$def['name']]['source']) && $this->_fielddefs[$def['name']]['source'] == 'custom_fields') {
@@ -300,6 +317,4 @@ class PopupMetaDataParser extends ListLayoutMetaDataParser
 
         return $dir;
     }
-
 }
-

@@ -3,12 +3,13 @@
 if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
-/*********************************************************************************
+/**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
- * SuiteCRM is an extension to SugarCRM Community Edition developed by Salesagility Ltd.
- * Copyright (C) 2011 - 2016 Salesagility Ltd.
+ * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -19,7 +20,7 @@ if (!defined('sugarEntry') || !sugarEntry) {
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -37,15 +38,10 @@ if (!defined('sugarEntry') || !sugarEntry) {
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
- ********************************************************************************/
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ */
 
-/*********************************************************************************
- * Description:
- * Portions created by SugarCRM are Copyright(C) SugarCRM, Inc. All Rights
- * Reserved. Contributor(s): ______________________________________..
- * *******************************************************************************/
 require_once 'include/SugarLogger/SugarLogger.php';
 
 $trackerManager = TrackerManager::getInstance();
@@ -69,9 +65,9 @@ return_module_language($curr_lang, 'UpgradeWizard', true);
 
 $standardErrorLevel = error_reporting();
 logThis('Setting error_reporting() to E_ERROR while running upgrade');
-error_reporting(E_ERROR);
 
-set_time_limit(0);
+
+//set_time_limit(0);
 /*
  * [unzip_dir] => /Users/curisu/www/head/cache/upload//upgrades/temp/QSugp3
  * [zip_from_dir]  => SugarEnt-Upgrade-4.0.1-to-4.2.1
@@ -86,7 +82,8 @@ if (didThisStepRunBefore('commit')) {
     set_upgrade_progress('commit', 'in_progress', 'commit', 'in_progress');
 }
 //Initialize session errors array
-if (!isset($_SESSION['sqlSkippedQueries']) && !is_array($_SESSION['sqlSkippedQueries'])) {
+$sqlSkipppedQueries = $_SESSION['sqlSkippedQueries'] ?? '';
+if (empty($sqlSkipppedQueries) && !is_array($sqlSkipppedQueries)) {
     $_SESSION['sqlSkippedQueries'] = array();
 }
 // prevent "REFRESH" double commits
@@ -347,6 +344,12 @@ eoq;
             logThis('*** ERROR: could not write config.php! - upgrade will fail!');
             $errors[] = $mod_strings['ERR_UW_CONFIG_WRITE'];
         }
+
+        if (function_exists('post_install_config_rebuild')) {
+            logThis('running post_install_config_rebuild() function');
+            @post_install_config_rebuild();
+        }
+
     }
     logThis('post_install() done.');
     //// END POSTINSTALL SCRIPTS
@@ -387,26 +390,26 @@ eoq;
     }
     logThis('finished check to see if current_db_version in $_SESSION equals target_db_version in $_SESSION');
 
-//Look for chance folder and delete it if found. Bug 23595
+    //Look for chance folder and delete it if found. Bug 23595
     if (function_exists('deleteChance')) {
         logThis('running deleteChance() function');
         @deleteChance();
     }
 
-//also add the cache cleaning here.
+    //also add the cache cleaning here.
     if (function_exists('deleteCache')) {
         logThis('running deleteCache() function');
         @deleteCache();
     }
 
-//add tabs
+    //add tabs
     $from_dir = remove_file_extension($install_file).'-restore';
     logThis('call addNewSystemTabsFromUpgrade('.$from_dir.')');
     addNewSystemTabsFromUpgrade($from_dir);
     logThis('finished addNewSystemTabsFromUpgrade');
 
-//run fix on dropdown lists that may have been incorrectly named
-//fix_dropdown_list();
+    //run fix on dropdown lists that may have been incorrectly named
+    //fix_dropdown_list();
 
     ///////////////////////////////////////////////////////////////////////////////
     ////	REGISTER UPGRADE
@@ -471,7 +474,7 @@ if (version_compare($_SESSION['current_db_version'], $_SESSION['target_db_versio
         $old_schema_contents = @drop_preUpgardeSchema(true);
         ob_end_clean();
     }
-    if ($old_schema_contents != null && strlen($old_schema_contents) > 0) {
+    if ($old_schema_contents != null && strlen((string) $old_schema_contents) > 0) {
         $old_schema = "<p><a href='javascript:void(0); toggleNwFiles(\"old_schemashow\");'>{$mod_strings['LBL_UW_SHOW_OLD_SCHEMA_TO_DROP']}</a>";
         $old_schema .= "<div id='old_schemashow' style='display:none;'>";
         $old_schema .= "<textarea readonly cols='80' rows='10'>{$old_schema_contents}</textarea>";
@@ -492,7 +495,7 @@ if (version_compare($_SESSION['current_db_version'], $_SESSION['target_db_versio
 }
 
 $copiedDesc = '';
-if (count($copiedFiles) > 0) {
+if ((is_countable($copiedFiles) ? count($copiedFiles) : 0) > 0) {
     $copiedDesc .= "<b>{$mod_strings['LBL_UW_COPIED_FILES_TITLE']}</b><br />";
     $copiedDesc .= "<a href='javascript:void(0); toggleNwFiles(\"copiedFiles\");'>{$mod_strings['LBL_UW_SHOW']}</a>";
     $copiedDesc .= "<div id='copiedFiles' style='display:none;'>";
@@ -504,7 +507,7 @@ if (count($copiedFiles) > 0) {
 }
 
 $skippedDesc = '';
-if (count($skippedFiles) > 0) {
+if ((is_countable($skippedFiles) ? count($skippedFiles) : 0) > 0) {
     $skippedDesc .= "<b>{$mod_strings['LBL_UW_SKIPPED_FILES_TITLE']}</b><br />";
     $skippedDesc .= "<a href='javascript:void(0); toggleNwFiles(\"skippedFiles\");'>{$mod_strings['LBL_UW_SHOW']}</a>";
     $skippedDesc .= "<div id='skippedFiles' style='display:none;'>";
@@ -521,7 +524,7 @@ $rebuildResult .= "<a href='javascript:void(0); toggleRebuild();'>{$mod_strings[
 $rebuildResult = '';
 
 $skipped_queries_Desc = '';
-if (isset($_SESSION['sqlSkippedQueries']) && $_SESSION['sqlSkippedQueries'] != null && is_array($_SESSION['sqlSkippedQueries']) && sizeof($_SESSION['sqlSkippedQueries']) > 0) {
+if (isset($_SESSION['sqlSkippedQueries']) && $_SESSION['sqlSkippedQueries'] != null && is_array($_SESSION['sqlSkippedQueries']) && count($_SESSION['sqlSkippedQueries']) > 0) {
     $skipped_queries_Desc .= "<b>{$mod_strings['LBL_UW_SKIPPED_QUERIES_ALREADY_EXIST']}</b><br />";
     $skipped_queries_Desc .= "<a href='javascript:void(0); toggleNwFiles(\"skippedQueries\");'>{$mod_strings['LBL_UW_SHOW']}</a>";
     $skipped_queries_Desc .= "<div id='skippedQueries' style='display:none;'>";
@@ -546,8 +549,7 @@ commitHandleReminders($skippedFiles);
 ////	HANDLE REMINDERS
 ///////////////////////////////////////////////////////////////////////////////
 
-logThis('Resetting error_reporting() to system level.');
-error_reporting($standardErrorLevel);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ////	OUTPUT

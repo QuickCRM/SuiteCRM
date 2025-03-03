@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2019 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -42,13 +42,13 @@ if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
-$mod_strings = array (
+$mod_strings = array(
     'ERR_NO_OPPS' => 'Please create some Opportunities to see Opportunity graphs.',
-    'LBL_ALL_OPPORTUNITIES' => 'Total amount of all opportunities is ',
+    'LBL_ALL_OPPORTUNITIES' => 'Total amount of all opportunities is',
     'LBL_CHART_TYPE' => 'Chart Type:',
-    'LBL_CREATED_ON' => 'Last run on ',
-	'LBL_CLOSE_DATE_START' => 'Expected Close Date - From:',
-	'LBL_CLOSE_DATE_END'   => 'Expected Close Date - To:',
+    'LBL_CREATED_ON' => 'Last run on',
+    'LBL_CLOSE_DATE_START' => 'Expected Close Date - From:',
+    'LBL_CLOSE_DATE_END' => 'Expected Close Date - To:',
     'LBL_DATE_END' => 'End Date:',
     'LBL_DATE_RANGE_TO' => 'to',
     'LBL_DATE_RANGE' => 'Date range is',
@@ -64,7 +64,7 @@ $mod_strings = array (
     'LBL_MODULE_TITLE' => 'Dashboard: Home',
     'LBL_MONTH_BY_OUTCOME_DESC' => 'Shows cumulative opportunity amounts by month by outcome for selected users where the expected closed date is within the specified date range. Outcome is based on whether the sales stage is Closed Won, Closed Lost, or any other value.',
     'LBL_OPP_SIZE' => 'Opportunity size in',
-    'LBL_OPP_THOUSANDS'=> 'K',
+    'LBL_OPP_THOUSANDS' => 'K',
     'LBL_OPPS_IN_LEAD_SOURCE' => 'opportunities where lead source is',
     'LBL_OPPS_IN_STAGE' => ' where sales stage is',
     'LBL_OPPS_OUTCOME' => ' where outcome is',
@@ -76,7 +76,7 @@ $mod_strings = array (
     'LBL_SALES_STAGE_FORM_DESC' => 'Shows cumulative opportunity amounts by selected sales stages for selected users where the expected closed date is within the specified date range.',
     'LBL_SALES_STAGE_FORM_TITLE' => 'Pipeline By Sales Stage',
     'LBL_SALES_STAGES' => 'Sales Stages:',
-    'LBL_TOTAL_PIPELINE' => 'Pipeline total is ',
+    'LBL_TOTAL_PIPELINE' => 'Pipeline total is',
     'LBL_USERS' => 'Users:',
     'LBL_YEAR_BY_OUTCOME' => 'Pipeline By Month By Outcome',
     'LBL_YEAR' => 'Year:',
@@ -91,7 +91,7 @@ $mod_strings = array (
     'LNK_NEW_TASK' => 'Create Task',
     'NTC_NO_LEGENDS' => 'None',
 
-    'LBL_TITLE' => 'Title: ',
+    'LBL_TITLE' => 'Title:',
     'LBL_MY_MODULES_USED_SIZE' => 'Access Count',
 
     'LBL_CHART_PIPELINE_BY_SALES_STAGE' => 'Pipeline by Sales Stage',
@@ -101,6 +101,3 @@ $mod_strings = array (
     'LBL_CHART_MY_PIPELINE_BY_SALES_STAGE' => 'My Pipeline by Sales Stage',
     'LBL_CHART_MY_MODULES_USED_30_DAYS' => 'My Modules Used (Last 30 Days)',
 );
-
-
-?>

@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -34,8 +34,8 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
  *}
 {*<!-- tab_panel_content.tpl START -->*}
@@ -59,10 +59,10 @@
 
         {{if $smarty.foreach.colIteration.total > 1 && $colData.colspan != 3}}
             {*<!-- DIV column - colspan != 3 -->*}
-            <div class="col-xs-12 col-sm-6 detail-view-row-item">
+            <div class="col-xs-12 col-sm-6 detail-view-row-item" data-field="{{$colData.field.name}}">
         {{else}}
             {*<!-- DIV column - colspan = 3 -->*}
-            <div class="col-xs-12 col-sm-12 detail-view-row-item">
+            <div class="col-xs-12 col-sm-12 detail-view-row-item" data-field="{{$colData.field.name}}">
         {{/if}}
 
 
@@ -121,10 +121,10 @@
 
                     {{if $smarty.foreach.colIteration.total > 1 && $colData.colspan != 3}}
                         {*<!-- phone (version 1) -->*}
-                        <div class="col-xs-12 col-sm-8 detail-view-field {{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}}inlineEdit{{/if}}" type="{{$fields[$colData.field.name].type}}" field="{{$fields[$colData.field.name].name}}" {{if $colData.colspan}}colspan='{{$colData.colspan}}'{{/if}} {{if isset($fields[$colData.field.name].type) && $fields[$colData.field.name].type == 'phone'}}class="phone"{{/if}}>
+                        <div class="col-xs-12 col-sm-8 detail-view-field{{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}} inlineEdit{{/if}}{{if isset($fields[$colData.field.name].type) && $fields[$colData.field.name].type == 'phone'}} phone{{/if}}" type="{{$fields[$colData.field.name].type}}" field="{{$fields[$colData.field.name].name}}" {{if $colData.colspan}}colspan='{{$colData.colspan}}'{{/if}}>
                     {{else}}
                         {*<!-- phone (version 2) -->*}
-                        <div class="col-xs-12 col-sm-10 detail-view-field {{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}}inlineEdit{{/if}}" type="{{$fields[$colData.field.name].type}}" field="{{$fields[$colData.field.name].name}}" {{if $colData.colspan}}colspan='{{$colData.colspan}}'{{/if}} {{if isset($fields[$colData.field.name].type) && $fields[$colData.field.name].type == 'phone'}}class="phone"{{/if}}>
+                        <div class="col-xs-12 col-sm-10 detail-view-field{{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}} inlineEdit{{/if}}{{if isset($fields[$colData.field.name].type) && $fields[$colData.field.name].type == 'phone'}} phone{{/if}}" type="{{$fields[$colData.field.name].type}}" field="{{$fields[$colData.field.name].name}}" {{if $colData.colspan}}colspan='{{$colData.colspan}}'{{/if}}>
                     {{/if}}
 
                     {{if !empty($colData.field.name)}}
@@ -179,16 +179,18 @@
 
                     {{/if}}
 
+                        {{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}}
+                        <div class="inlineEditIcon col-xs-hidden">
+                            <span class="suitepicon suitepicon-action-edit"></span>
+                        </div>
+                        {{/if}}
+
                     </div>
                     {*<!-- /phone (version 1/2) -->*}
 
                 {{/if}}
 
-                {{if $inline_edit && !empty($colData.field.name) && ($fields[$colData.field.name].inline_edit == 1 || !isset($fields[$colData.field.name].inline_edit))}}
-                    <div class="inlineEditIcon col-xs-hidden">
-                        {sugar_getimage name="inline_edit_icon.svg" attr='border="0" ' alt="$alt_edit"}
-                    </div>
-                {{/if}}
+
 
                 {{counter name="fieldCount" print=false}}
 
@@ -199,9 +201,6 @@
 
         </div>
         {*<!-- /DIV column -->*}
-        {{if $fieldCount==0}}
-        <div class="clear"></div>
-        {{/if}}
 
 
     {{/foreach}}

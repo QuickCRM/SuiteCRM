@@ -24,12 +24,12 @@
 
 
 $dictionary['AOW_Processed'] = array(
-	'table'=>'aow_processed',
-	'audited'=>false,
-	'duplicate_merge'=>true,
-	'fields'=>array (
-  'aow_workflow_id' => 
-  array (
+    'table'=>'aow_processed',
+    'audited'=>false,
+    'duplicate_merge'=>true,
+    'fields'=>array(
+  'aow_workflow_id' =>
+  array(
     'required' => false,
     'name' => 'aow_workflow_id',
     'vname' => 'LBL_AOW_WORKFLOW_ID',
@@ -47,8 +47,8 @@ $dictionary['AOW_Processed'] = array(
     'len' => 36,
     'size' => '20',
   ),
-  'aow_workflow' => 
-  array (
+  'aow_workflow' =>
+  array(
     'required' => false,
     'source' => 'non-db',
     'name' => 'aow_workflow',
@@ -74,7 +74,7 @@ $dictionary['AOW_Processed'] = array(
     'studio' => 'visible',
   ),
   'parent_id' =>
-  array (
+  array(
     'required' => false,
     'name' => 'parent_id',
     'vname' => 'LBL_BEAN_ID',
@@ -97,8 +97,8 @@ $dictionary['AOW_Processed'] = array(
   array(
     'name'=> 'parent_name',
     'parent_type'=>'record_type_display' ,
-    'type_name'=>'bean_module',
-    'id_name'=>'bean_id',
+    'type_name'=>'parent_type',
+    'id_name'=>'parent_id',
     'vname'=>'LBL_BEAN',
     'type'=>'parent',
     'group'=>'parent_name',
@@ -107,7 +107,7 @@ $dictionary['AOW_Processed'] = array(
   ),
 
   'parent_type' =>
-  array (
+  array(
     'required' => false,
     'name' => 'parent_type',
     'vname' => 'LBL_MODULE',
@@ -130,8 +130,8 @@ $dictionary['AOW_Processed'] = array(
     'studio' => 'visible',
     'dependency' => false,
   ),
-  'status' => 
-  array (
+  'status' =>
+  array(
     'required' => false,
     'name' => 'status',
     'vname' => 'LBL_STATUS',
@@ -154,7 +154,7 @@ $dictionary['AOW_Processed'] = array(
     'dependency' => false,
   ),
   'aow_actions' =>
-  array (
+  array(
     'name' => 'aow_actions',
     'type' => 'link',
     'relationship' => 'aow_processed_aow_actions',
@@ -163,7 +163,7 @@ $dictionary['AOW_Processed'] = array(
     'source'=>'non-db',
   ),
 ),
-	'relationships'=>array (
+    'relationships'=>array(
 ),
     'indices' => array(
         array(
@@ -182,10 +182,10 @@ $dictionary['AOW_Processed'] = array(
             'fields' => array('aow_workflow_id'),
         ),
     ),
-	'optimistic_locking'=>true,
-		'unified_search'=>true,
-	);
-if (!class_exists('VardefManager')){
-        require_once('include/SugarObjects/VardefManager.php');
+    'optimistic_locking'=>true,
+        'unified_search'=>true,
+    );
+if (!class_exists('VardefManager')) {
+    require_once('include/SugarObjects/VardefManager.php');
 }
-VardefManager::createVardef('AOW_Processed','AOW_Processed', array('basic'));
+VardefManager::createVardef('AOW_Processed', 'AOW_Processed', array('basic'));

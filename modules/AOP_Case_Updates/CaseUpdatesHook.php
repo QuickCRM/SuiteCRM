@@ -1,10 +1,11 @@
 <?php
 /**
+ *
  * SugarCRM Community Edition is a customer relationship management program developed by
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2016 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2018 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -15,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License along with
@@ -33,14 +34,15 @@
  * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "Powered by
  * SugarCRM" logo and "Supercharged by SuiteCRM" logo. If the display of the logos is not
- * reasonably feasible for  technical reasons, the Appropriate Legal Notices must
- * display the words  "Powered by SugarCRM" and "Supercharged by SuiteCRM".
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Powered by SugarCRM" and "Supercharged by SuiteCRM".
  */
 require_once 'util.php';
 
 /**
  * Class CaseUpdatesHook
  */
+#[\AllowDynamicProperties]
 class CaseUpdatesHook
 {
     private $slug_size = 50;
@@ -62,13 +64,15 @@ class CaseUpdatesHook
     private function arrangeFilesArray()
     {
         $count = 0;
-        foreach ($_FILES['case_update_file'] as $key => $vals) {
-            foreach ($vals as $index => $val) {
-                if (!array_key_exists('case_update_file' . $index, $_FILES)) {
-                    $_FILES['case_update_file' . $index] = array();
-                    ++$count;
+        if(!empty($_FILES['case_update_file'] )) {
+            foreach ($_FILES['case_update_file'] as $key => $vals) {
+                foreach ($vals as $index => $val) {
+                    if (!array_key_exists('case_update_file' . $index, $_FILES)) {
+                        $_FILES['case_update_file' . $index] = [];
+                        ++$count;
+                    }
+                    $_FILES['case_update_file' . $index][$key] = $val;
                 }
-                $_FILES['case_update_file' . $index][$key] = $val;
             }
         }
 
@@ -101,7 +105,7 @@ class CaseUpdatesHook
 
             return;
         }
-        if ($_REQUEST['module'] === 'Import') {
+        if (isset($_REQUEST['module']) && $_REQUEST['module'] === 'Import') {
             return;
         }
         //Grab the update field and create a new update with it.
@@ -111,13 +115,13 @@ class CaseUpdatesHook
             return;
         }
         $case->update_text = '';
-        $case_update = new AOP_Case_Updates();
+        $case_update = BeanFactory::newBean('AOP_Case_Updates');
         $case_update->name = $text;
         $case_update->internal = $case->internal;
         $case->internal = false;
         $case_update->assigned_user_id = $current_user->id;
-        if (strlen($text) > $this->slug_size) {
-            $case_update->name = substr($text, 0, $this->slug_size) . '...';
+        if (strlen((string) $text) > $this->slug_size) {
+            $case_update->name = substr((string) $text, 0, $this->slug_size) . '...';
         }
         $case_update->description = nl2br($text);
         $case_update->case_id = $case->id;
@@ -254,7 +258,7 @@ class CaseUpdatesHook
                 $this->linkAccountAndCase($email->parent_id, $emailBean->account_id);
             }
         }
-        $caseUpdate = new AOP_Case_Updates();
+        $caseUpdate = BeanFactory::newBean('AOP_Case_Updates');
         $caseUpdate->name = $email->name;
         $caseUpdate->contact_id = $contact_id;
         $updateText = $this->unquoteEmail($email->description_html ? $email->description_html : $email->description);
@@ -291,12 +295,12 @@ class CaseUpdatesHook
         if (empty($caseId) || empty($sugar_config['aop']['case_status_changes'])) {
             return;
         }
-        $statusMap = json_decode($sugar_config['aop']['case_status_changes'], 1);
+        $statusMap = json_decode((string) $sugar_config['aop']['case_status_changes'], 1);
         if (empty($statusMap)) {
             return;
         }
         $case = BeanFactory::getBean('Cases', $caseId);
-        if (!empty($case->id)) {
+        if (empty($case->id)) {
             return;
         }
         if (array_key_exists($case->status, $statusMap)) {
@@ -315,9 +319,9 @@ class CaseUpdatesHook
     private function unquoteEmail($text)
     {
         global $app_strings;
-        $text = html_entity_decode($text);
+        $text = html_entity_decode((string) $text);
         $text = preg_replace('/(\r\n|\r|\n)/s', "\n", $text);
-        $pos = strpos($text, $app_strings['LBL_AOP_EMAIL_REPLY_DELIMITER']);
+        $pos = strpos($text, (string) $app_strings['LBL_AOP_EMAIL_REPLY_DELIMITER']);
         if ($pos !== false) {
             $text = substr($text, 0, $pos);
         }
@@ -334,7 +338,7 @@ class CaseUpdatesHook
             return;
         }
         $case->send_closure_email = true;
-        if ($case->state !== 'Closed' || $case->fetched_row['state'] === 'Closed') {
+        if (($case->state ?? '') !== 'Closed' || ($case->fetched_row['state'] ?? '') === 'Closed') {
             $case->send_closure_email = false;
         }
     }
@@ -366,17 +370,17 @@ class CaseUpdatesHook
         $GLOBALS['log']->warn('CaseUpdatesHook: sendClosureEmail called');
         require_once 'include/SugarPHPMailer.php';
         $mailer = new SugarPHPMailer();
-        $admin = new Administration();
+        $admin = BeanFactory::newBean('Administration');
         $admin->retrieveSettings();
 
         $mailer->prepForOutbound();
         $mailer->setMailerForSystem();
 
-        $emailTemplate = new EmailTemplate();
+        $emailTemplate = BeanFactory::newBean('EmailTemplates');
         $aop_config = $this->getAOPConfig();
         $emailTemplate->retrieve($aop_config['case_closure_email_template_id']);
 
-        if (!$emailTemplate) {
+        if (!$emailTemplate->id) {
             $GLOBALS['log']->warn('CaseUpdatesHook: sendClosureEmail template is empty');
 
             return false;
@@ -397,6 +401,7 @@ class CaseUpdatesHook
         $mailer->isHTML(true);
         $mailer->AltBody = $text['body_alt'];
         $mailer->From = $emailSettings['from_address'];
+        isValidEmailAddress($mailer->From);
         $mailer->FromName = $emailSettings['from_name'];
 
         $email = $contact->emailAddress->getPrimaryAddress($contact);
@@ -456,19 +461,19 @@ class CaseUpdatesHook
     {
         global $app_strings, $sugar_config;
         //Order of beans seems to matter here so we place contact first.
-        $beans = array(
+        $beans = [
             'Contacts' => $contact->id,
-            'Cases'    => $bean->id,
-            'Users'    => $bean->assigned_user_id,
-        );
-        $ret = array();
+            'Cases' => $bean->id,
+            'Users' => $bean->assigned_user_id,
+        ];
+        $ret = [];
         $ret['subject'] = from_html(aop_parse_template($template->subject, $beans));
         $ret['body'] = from_html(
             $app_strings['LBL_AOP_EMAIL_REPLY_DELIMITER'] . aop_parse_template(
                 str_replace(
                     '$sugarurl',
                     $sugar_config['site_url'],
-                    $template->body_html
+                    (string) $template->body_html
                 ),
                 $beans
             )
@@ -479,7 +484,7 @@ class CaseUpdatesHook
                     str_replace(
                         '$sugarurl',
                         $sugar_config['site_url'],
-                        $template->body
+                        (string) $template->body
                     ),
                     $beans
                 )
@@ -496,7 +501,7 @@ class CaseUpdatesHook
     {
         global $sugar_config;
         if (!array_key_exists('aop', $sugar_config)) {
-            return array();
+            return [];
         }
 
         return $sugar_config['aop'];
@@ -515,17 +520,17 @@ class CaseUpdatesHook
         }
         require_once 'include/SugarPHPMailer.php';
         $mailer = new SugarPHPMailer();
-        $admin = new Administration();
+        $admin = BeanFactory::newBean('Administration');
         $admin->retrieveSettings();
 
         $mailer->prepForOutbound();
         $mailer->setMailerForSystem();
 
-        $emailTemplate = new EmailTemplate();
+        $emailTemplate = BeanFactory::newBean('EmailTemplates');
 
         $aop_config = $this->getAOPConfig();
         $emailTemplate->retrieve($aop_config['case_creation_email_template_id']);
-        if (!$emailTemplate || !$aop_config['case_creation_email_template_id']) {
+        if (!$emailTemplate->id) {
             $GLOBALS['log']->warn('CaseUpdatesHook: sendCreationEmail template is empty');
 
             return false;
@@ -538,6 +543,7 @@ class CaseUpdatesHook
         $mailer->isHTML(true);
         $mailer->AltBody = $text['body_alt'];
         $mailer->From = $emailSettings['from_address'];
+        isValidEmailAddress($mailer->From);
         $mailer->FromName = $emailSettings['from_name'];
         $email = $contact->emailAddress->getPrimaryAddress($contact);
         if (empty($email) && !empty($contact->email1)) {
@@ -568,7 +574,7 @@ class CaseUpdatesHook
     private function logEmail($email, SugarPHPMailer $mailer, $caseId = null)
     {
         require_once 'modules/Emails/Email.php';
-        $emailObj = new Email();
+        $emailObj = BeanFactory::newBean('Emails');
         $emailObj->to_addrs_names = $email;
         $emailObj->type = 'out';
         $emailObj->deleted = '0';
@@ -580,7 +586,7 @@ class CaseUpdatesHook
             $emailObj->parent_type = 'Cases';
             $emailObj->parent_id = $caseId;
         }
-        $emailObj->date_sent = TimeDate::getInstance()->nowDb();
+        $emailObj->date_sent_received = TimeDate::getInstance()->nowDb();
         $emailObj->modified_user_id = '1';
         $emailObj->created_by = '1';
         $emailObj->status = 'sent';
@@ -601,18 +607,32 @@ class CaseUpdatesHook
     public function sendCaseUpdate(AOP_Case_Updates $caseUpdate)
     {
         global $current_user, $sugar_config;
-        $email_template = new EmailTemplate();
-        if ($_REQUEST['module'] === 'Import') {
+        $email_template = BeanFactory::newBean('EmailTemplates');
+
+        $module = null;
+        if (isset($_REQUEST['module'])) {
+            $module = $_REQUEST['module'];
+        } else {
+            LoggerManager::getLogger()->warn('Requested module is not set for case update');
+        }
+
+        if ($module === 'Import') {
             //Don't send email on import
+            LoggerManager::getLogger()->warn("Don't send email on import");
+
             return;
         }
         if (!isAOPEnabled()) {
+            LoggerManager::getLogger()->warn("Don't send email if AOP enabled");
+
             return;
         }
         if ($caseUpdate->internal) {
+            LoggerManager::getLogger()->warn("Don't send email if case update is internal");
+
             return;
         }
-        $signature = array();
+        $signature = [];
         $addDelimiter = true;
         $aop_config = $sugar_config['aop'];
         if ($caseUpdate->assigned_user_id) {
@@ -620,10 +640,10 @@ class CaseUpdatesHook
                 $email_template = $email_template->retrieve($aop_config['contact_email_template_id']);
                 $signature = $current_user->getDefaultSignature();
             }
-            if ($email_template) {
+            if ($email_template->id) {
                 foreach ($caseUpdate->getContacts() as $contact) {
                     $GLOBALS['log']->info('AOPCaseUpdates: Calling send email');
-                    $emails = array();
+                    $emails = [];
                     $emails[] = $contact->emailAddress->getPrimaryAddress($contact);
                     $caseUpdate->sendEmail(
                         $emails,
@@ -641,8 +661,8 @@ class CaseUpdatesHook
                 $email_template = $email_template->retrieve($aop_config['user_email_template_id']);
             }
             $addDelimiter = false;
-            if ($emails && $email_template) {
-                $GLOBALS['log']->info('AOPCaseUpdates: Calling send email');
+            if ($emails && $email_template->id) {
+                LoggerManager::getLogger()->info('AOPCaseUpdates: Calling send email');
                 $caseUpdate->sendEmail(
                     $emails,
                     $email_template,

@@ -1,7 +1,8 @@
 <?php
 
-class SuiteMozaik {
-
+#[\AllowDynamicProperties]
+class SuiteMozaik
+{
     private $mozaikPath = 'include/javascript/mozaik';
     private $vendorPath;
 
@@ -61,15 +62,16 @@ class SuiteMozaik {
 
     private static $devMode = false;
 
-    public function __construct() {
-        $this->vendorPath = $this->mozaikPath . '/vendor';
-        if($this->autoInsertThumbnails) {
-            if(count($this->getThumbs())==0 || self::$devMode) {
+    public function __construct()
+    {
+        $this->vendorPath = 'vendor/';
+        if ($this->autoInsertThumbnails) {
+            if ((is_countable($this->getThumbs()) ? count($this->getThumbs()) : 0)==0 || self::$devMode) {
                 $ord = 0;
-                foreach(self::$defaultThumbnails as $thumbName => $thumbData) {
-                    $templateSectionLine = new TemplateSectionLine();
+                foreach (self::$defaultThumbnails as $thumbName => $thumbData) {
+                    $templateSectionLine = BeanFactory::newBean('TemplateSectionLine');
                     $templateSectionLine->name = $thumbData['label'];
-                    $templateSectionLine->description = preg_replace('/^string:/', '', $thumbData['tpl']);
+                    $templateSectionLine->description = preg_replace('/^string:/', '', (string) $thumbData['tpl']);
                     $templateSectionLine->description = str_replace('{lipsum}', $this->getContentLipsum(), $templateSectionLine->description);
                     $templateSectionLine->description = str_replace('{imageSmall}', $this->getContentImageSample(130), $templateSectionLine->description);
                     $templateSectionLine->description = str_replace('{image}', $this->getContentImageSample(), $templateSectionLine->description);
@@ -82,15 +84,16 @@ class SuiteMozaik {
         }
     }
 
-    private function getContentLipsum() {
+    private function getContentLipsum()
+    {
         return 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam tempus odio ante, in feugiat ex pretium eu. In pharetra tincidunt urna et malesuada. Etiam aliquet auctor justo eu placerat. In nec sollicitudin enim. Nulla facilisi. In viverra velit turpis, et lobortis nunc eleifend id. Curabitur semper tincidunt vulputate. Nullam fermentum pellentesque ullamcorper.';
     }
 
-    private function getContentImageSample($width = null) {
-        if(is_numeric($width)) {
+    private function getContentImageSample($width = null)
+    {
+        if (is_numeric($width)) {
             $width = ' width="' . $width . '"';
-        }
-        else {
+        } else {
             $width = '';
         }
         $splits = explode('index.php', $_SERVER['REQUEST_URI']);
@@ -99,19 +102,21 @@ class SuiteMozaik {
         return $image;
     }
 
-    public function getDependenciesHTML() {
+    public function getDependenciesHTML()
+    {
         $html = <<<HTML
 <script src='{$this->vendorPath}/tinymce/tinymce/tinymce.min.js'></script>
 <script src="{$this->vendorPath}/gymadarasz/imagesloaded/imagesloaded.pkgd.min.js"></script>
 
 <!-- for color picker plugin -->
-<link rel="stylesheet" media="screen" type="text/css" href="{$this->vendorPath}/../colorpicker/css/colorpicker.css" />
-<script type="text/javascript" src="{$this->vendorPath}/../colorpicker/js/colorpicker.js"></script>
+<link rel="stylesheet" media="screen" type="text/css" href="{$this->mozaikPath}/colorpicker/css/colorpicker.css" />
+<script type="text/javascript" src="{$this->mozaikPath}/colorpicker/js/colorpicker.js"></script>
 HTML;
         return $html;
     }
 
-    public function getIncludeHTML() {
+    public function getIncludeHTML()
+    {
         $html = <<<HTML
 <link rel="stylesheet" href="{$this->mozaikPath}/jquery.mozaik.css">
 <script src='{$this->mozaikPath}/jquery.mozaik.js'></script>
@@ -119,34 +124,36 @@ HTML;
         return $html;
     }
 
-    private function tinyMCESetupArgumentFixer($tinyMCESetup = '{}') {
-        if(!$tinyMCESetup) {
+    private function tinyMCESetupArgumentFixer($tinyMCESetup = '{}')
+    {
+        if (!$tinyMCESetup) {
             $tinyMCESetup = '{}';
         }
 
-        if(is_array($tinyMCESetup) || is_object($tinyMCESetup)) {
-            $tinyMCESetup = json_encode($tinyMCESetup);
+        if (is_array($tinyMCESetup) || is_object($tinyMCESetup)) {
+            $tinyMCESetup = json_encode($tinyMCESetup, JSON_THROW_ON_ERROR);
         }
 
-        if(!preg_match('/^tinyMCE\s*:\s*/', $tinyMCESetup)) {
+        if (!preg_match('/^tinyMCE\s*:\s*/', (string) $tinyMCESetup)) {
             $tinyMCESetup = "tinyMCE: $tinyMCESetup";
         }
         return $tinyMCESetup;
     }
 
-    public function getElementHTML($contents = '', $textareaId = null, $elementId = 'mozaik', $width = '600', $thumbs = array(), $tinyMCESetup = '{}') {
-        if(is_numeric($width)) {
+    public function getElementHTML($contents = '', $textareaId = null, $elementId = 'mozaik', $width = '600', $thumbs = array(), $tinyMCESetup = '{}')
+    {
+        if (is_numeric($width)) {
             $width .= 'px';
         }
-        if(!$thumbs) {
+        if (!$thumbs) {
             $thumbs = self::$defaultThumbnails;
         }
-        $thumbsJSON = json_encode($thumbs);
+        $thumbsJSON = json_encode($thumbs, JSON_THROW_ON_ERROR);
 
         $tinyMCESetup = $this->tinyMCESetupArgumentFixer($tinyMCESetup);
 
         $refreshTextareaScript = '';
-        if($textareaId) {
+        if ($textareaId) {
             $refreshTextareaScript = $this->getRefreshTextareaScript($textareaId, $elementId, $width);
         }
         $html = <<<HTML
@@ -199,8 +206,9 @@ HTML;
         return $html;
     }
 
-    public function getAllHTML($contents = '', $textareaId = null, $elementId = 'mozaik', $width = '600', $group = '', $tinyMCESetup = '{}') {
-        if(is_numeric($width)) {
+    public function getAllHTML($contents = '', $textareaId = null, $elementId = 'mozaik', $width = '600', $group = '', $tinyMCESetup = '{}')
+    {
+        if (is_numeric($width)) {
             $width .= 'px';
         }
         $tinyMCESetup = $this->tinyMCESetupArgumentFixer($tinyMCESetup);
@@ -211,8 +219,9 @@ HTML;
         return $mozaikHTML;
     }
 
-    private function getRefreshTextareaScript($textareaId, $elementId, $width = 'initial') {
-        if(is_numeric($width)) {
+    private function getRefreshTextareaScript($textareaId, $elementId, $width = 'initial')
+    {
+        if (is_numeric($width)) {
             $width .= 'px';
         }
         $js = <<<SCRIPT
@@ -234,10 +243,11 @@ SCRIPT;
         return $js;
     }
 
-    private function getThumbs($group = '') {
+    private function getThumbs($group = '')
+    {
         $cacheGroup = 'cached_' . $group;
 
-        if(!isset($this->thumbsCache[$cacheGroup])) {
+        if (!isset($this->thumbsCache[$cacheGroup])) {
             $db = DBManagerFactory::getInstance();
             $_group = $db->quote($group);
             $templateSectionLineBean = BeanFactory::getBean('TemplateSectionLine');
@@ -247,7 +257,7 @@ SCRIPT;
                 foreach ($thumbBeans as $thumbBean) {
                     $thumbs[$thumbBean->name] = array(
                         'label' => $thumbBean->thumbnail ? $this->getThumbImageHTML($thumbBean->thumbnail, $thumbBean->name) : $thumbBean->name,
-                        'tpl' => 'string:' . html_entity_decode($thumbBean->description),
+                        'tpl' => 'string:' . html_entity_decode((string) $thumbBean->description),
                     );
                 }
             }
@@ -259,14 +269,13 @@ SCRIPT;
         return $thumbs;
     }
 
-    private function getThumbImageHTML($src, $label) {
-        if(file_exists($src)) {
+    private function getThumbImageHTML($src, $label)
+    {
+        if (file_exists($src)) {
             $html = '<img src="' . $src. '" alt="' . $label . '">';
-        }
-        else {
+        } else {
             $html = $label;
         }
         return $html;
     }
-
 }

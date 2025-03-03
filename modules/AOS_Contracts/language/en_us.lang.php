@@ -5,7 +5,7 @@
  * SugarCRM, Inc. Copyright (C) 2004-2013 SugarCRM Inc.
  *
  * SuiteCRM is an extension to SugarCRM Community Edition developed by SalesAgility Ltd.
- * Copyright (C) 2011 - 2017 SalesAgility Ltd.
+ * Copyright (C) 2011 - 2019 SalesAgility Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by the
@@ -42,7 +42,7 @@ if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
-$mod_strings = array (
+$mod_strings = array(
     'LBL_ASSIGNED_TO_NAME' => 'Contract Manager',
     'LBL_CONTRACT_ACCOUNT' => 'Account',
     'LBL_OPPORTUNITY' => 'Opportunity',
@@ -76,6 +76,7 @@ $mod_strings = array (
     'LBL_STATUS' => 'Status',
     'LBL_CUSTOMER_SIGNED_DATE' => 'Customer Signed Date',
     'LBL_COMPANY_SIGNED_DATE' => 'Company Signed Date',
+    'LBL_RENEWAL_REMINDER' => ' Contract Renewal Reminder',
     'LBL_RENEWAL_REMINDER_DATE' => 'Renewal Reminder Date',
     'LBL_CONTRACT_TYPE' => 'Contract Type',
     'LBL_CONTACT' => 'Contact',
@@ -128,4 +129,3 @@ $mod_strings = array (
     'LBL_AOS_PRODUCT_QUOTES' => 'Product Quotes',
     'LBL_AOS_QUOTES_AOS_CONTRACTS' => 'Quotes: Contracts',
 );
-?>
