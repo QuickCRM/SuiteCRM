@@ -249,7 +249,7 @@ class ListViewData
     public function getListViewData($seed, $where, $offset=-1, $limit = -1, $filter_fields=array(), $params=array(), $id_field = 'id', $singleSelect=true, $id = null)
     {
         global $current_user;
-        require_once 'include/SearchForm/SearchForm2.php';
+        //require_once 'include/SearchForm/SearchForm2.php';
         SugarVCR::erase($seed->module_dir);
         $this->seed =& $seed;
         $totalCounted = empty($GLOBALS['sugar_config']['disable_count_query']);
