@@ -12,11 +12,15 @@ class Id extends BaseOption
      */
     public function add(OptionsResolver $resolver)
     {
+        // support de $sugar_config['strict_id_validation'] = false;
+        $idValidator = new \SuiteCRM\Utility\SuiteValidator();
+        $pattern = $idValidator->getIdValidationPattern();
+
         $resolver
             ->setRequired('id')
             ->setAllowedTypes('id', 'string')
             ->setAllowedValues('id', $this->validatorFactory->createClosure([
-                new Assert\Regex('/^(\d+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i')
+                new Assert\Regex($pattern)
             ]));
     }
 }
