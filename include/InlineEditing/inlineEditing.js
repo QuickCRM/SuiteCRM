@@ -131,6 +131,7 @@ function buildEditField() {
                 .find("[type=checkbox]")
                 .attr("value");
         }
+        var focus_field = field;
 
         if (
             $('[field="' + field + '"]')
@@ -170,13 +171,14 @@ function buildEditField() {
                     }
                     //Needs to be called to enable quicksearch/typeahead functionality on the field.
                     enableQS(true);
+                    focus_field += "_display";
                 }
 
                 //Add the active class so we know which td we are editing as they all have the inlineEdit class.
                 $(_this).addClass("inlineEditActive");
 
                 //Put the cursor in the field if possible.
-                $("#" + field).focus();
+                $("#" + focus_field).focus();
                 if (type == "name" || type == "text") {
                     // move focus to end of text (multiply by 2 to make absolute certain its end as some browsers count carriage return as more than 1 character)
                     var strLength = $("#" + field).val().length * 2;
